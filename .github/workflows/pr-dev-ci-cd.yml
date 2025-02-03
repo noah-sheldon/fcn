@@ -18,7 +18,6 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 22
-          cache: "pnpm"
 
       # Step 3: Install pnpm
       - name: Install pnpm
