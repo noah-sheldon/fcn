@@ -29,11 +29,11 @@ jobs:
 
       # Step 5: Run TurboRepo build
       - name: Build all apps using Turbo
-        run: pnpm turbo run build --filter="[affected]"
+        run: pnpm turbo run build --filter="..."
 
       # Step 6: Run TurboRepo tests
       - name: Run tests using Turbo
-        run: pnpm turbo run test --filter="[affected]"
+        run: pnpm turbo run test --filter="..."
 
   deploy-dev:
     runs-on: ubuntu-latest
