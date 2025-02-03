@@ -13,28 +13,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step 2: Set up Node.js and pnpm
-      - name: Set up Node.js and pnpm
+      # Step 2: Set up Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 22
+          cache: "pnpm"
 
+      # Step 3: Install pnpm
       - name: Install pnpm
         run: npm install -g pnpm
 
-      # Step 3: Install dependencies using pnpm (with caching)
+      # Step 4: Install dependencies (TurboRepo workspace-aware)
       - name: Install dependencies
-        run: |
-          cd apps/ws-server && pnpm install --frozen-lockfile
-          cd ../http-server && pnpm install --frozen-lockfile
-          cd ../web && pnpm install --frozen-lockfile
+        run: pnpm install
 
-      # Step 4: Run tests
-      - name: Run tests
-        run: |
-          cd apps/ws-server && pnpm test
-          cd ../http-server && pnpm test
-          cd ../web && pnpm test
+      # Step 5: Run TurboRepo build
+      - name: Build all apps using Turbo
+        run: pnpm turbo run build --filter="[affected]"
+
+      # Step 6: Run TurboRepo tests
+      - name: Run tests using Turbo
+        run: pnpm turbo run test --filter="[affected]"
 
   deploy-dev:
     runs-on: ubuntu-latest
