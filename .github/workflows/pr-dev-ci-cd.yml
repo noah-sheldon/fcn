@@ -18,6 +18,7 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 22
+          cache: "pnpm"
 
       # Step 3: Install pnpm
       - name: Install pnpm
@@ -25,7 +26,7 @@ jobs:
 
       # Step 4: Install dependencies (TurboRepo workspace-aware)
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       # Step 5: Run TurboRepo build
       - name: Build all apps using Turbo
@@ -56,25 +57,13 @@ jobs:
       - name: Get Short SHA
         run: echo "SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_ENV
 
-      # Step 4: Build Docker images with short SHA
-      - name: Build WebSocket Server
-        run: docker build -t faithfulconnects/ws-server:${{ env.SHORT_SHA }} -f apps/ws-server/Dockerfile .
+      # Step 4: Build Docker images with TurboRepo
+      - name: Build Docker Images
+        run: pnpm turbo run docker-build
 
-      - name: Build HTTP Server
-        run: docker build -t faithfulconnects/http-server:${{ env.SHORT_SHA }} -f apps/http-server/Dockerfile .
-
-      - name: Build Web Frontend
-        run: docker build -t faithfulconnects/web:${{ env.SHORT_SHA }} -f apps/web/Dockerfile .
-
-      # Step 5: Push Docker images
-      - name: Push WebSocket Server
-        run: docker push faithfulconnects/ws-server:${{ env.SHORT_SHA }}
-
-      - name: Push HTTP Server
-        run: docker push faithfulconnects/http-server:${{ env.SHORT_SHA }}
-
-      - name: Push Web Frontend
-        run: docker push faithfulconnects/web:${{ env.SHORT_SHA }}
+      # Step 5: Push Docker images with TurboRepo
+      - name: Push Docker Images
+        run: pnpm turbo run docker-push
 
       # Step 6: Deploy to Dev AWS Instance
       - name: Deploy to Dev AWS Instance
