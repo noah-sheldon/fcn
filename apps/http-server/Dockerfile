@@ -23,4 +23,4 @@ RUN pnpm run build
 EXPOSE 3002
 
 # Start the HTTP server
-CMD ["node", "src/index.ts"]
+CMD ["node", "src/index.js"]

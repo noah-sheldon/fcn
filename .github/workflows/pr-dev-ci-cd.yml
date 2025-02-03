@@ -1,0 +1,141 @@
+name: PR CI/CD Pipeline
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Node.js and pnpm
+      - name: Set up Node.js and pnpm
+        uses: actions/setup-node@v3
+        with:
+          node-version: 22
+          cache: "pnpm"
+
+      - name: Install pnpm
+        run: corepack enable && corepack prepare pnpm@latest --activate
+
+      # Step 3: Install dependencies using pnpm (with caching)
+      - name: Install dependencies
+        run: |
+          cd apps/ws-server && pnpm install --frozen-lockfile
+          cd ../http-server && pnpm install --frozen-lockfile
+          cd ../web && pnpm install --frozen-lockfile
+
+      # Step 4: Run tests
+      - name: Run tests
+        run: |
+          cd apps/ws-server && pnpm test
+          cd ../http-server && pnpm test
+          cd ../web && pnpm test
+
+  deploy-dev:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'pull_request'
+
+    steps:
+      # Step 1: Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Log in to Docker Hub
+      - name: Docker login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Step 3: Get Short SHA (7 characters)
+      - name: Get Short SHA
+        run: echo "SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_ENV
+
+      # Step 4: Build Docker images with short SHA
+      - name: Build WebSocket Server
+        run: docker build -t faithfulconnects/ws-server:${{ env.SHORT_SHA }} -f apps/ws-server/Dockerfile .
+
+      - name: Build HTTP Server
+        run: docker build -t faithfulconnects/http-server:${{ env.SHORT_SHA }} -f apps/http-server/Dockerfile .
+
+      - name: Build Web Frontend
+        run: docker build -t faithfulconnects/web:${{ env.SHORT_SHA }} -f apps/web/Dockerfile .
+
+      # Step 5: Push Docker images
+      - name: Push WebSocket Server
+        run: docker push faithfulconnects/ws-server:${{ env.SHORT_SHA }}
+
+      - name: Push HTTP Server
+        run: docker push faithfulconnects/http-server:${{ env.SHORT_SHA }}
+
+      - name: Push Web Frontend
+        run: docker push faithfulconnects/web:${{ env.SHORT_SHA }}
+
+      # Step 6: Deploy to Dev AWS Instance
+      - name: Deploy to Dev AWS Instance
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          # Set up SSH key
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+          # Deploy using rsync (avoids inline file creation)
+          rsync -avz -e "ssh -o StrictHostKeyChecking=no" ./nginx/nginx.conf ubuntu@dev.fcn.social:/home/ubuntu/nginx/nginx.conf
+
+          # SSH into the instance and deploy
+          ssh -o StrictHostKeyChecking=no ubuntu@dev.fcn.social << 'EOF'
+          docker pull faithfulconnects/ws-server:${{ env.SHORT_SHA }}
+          docker pull faithfulconnects/http-server:${{ env.SHORT_SHA }}
+          docker pull faithfulconnects/web:${{ env.SHORT_SHA }}
+
+          docker-compose down || true
+
+          cat > docker-compose.yml <<EOL
+          version: '3'
+          services:
+            ws-server:
+              image: faithfulconnects/ws-server:${{ env.SHORT_SHA }}
+              environment:
+                MONGO_URI: "$MONGO_URI"
+                SUPABASE_URL: "$SUPABASE_URL"
+                SUPABASE_ANON_KEY: "$SUPABASE_ANON_KEY"
+              ports:
+                - "3001:3001"
+            http-server:
+              image: faithfulconnects/http-server:${{ env.SHORT_SHA }}
+              environment:
+                MONGO_URI: "$MONGO_URI"
+                SUPABASE_URL: "$SUPABASE_URL"
+                SUPABASE_ANON_KEY: "$SUPABASE_ANON_KEY"
+              ports:
+                - "3000:3000"
+            web:
+              image: faithfulconnects/web:${{ env.SHORT_SHA }}
+              ports:
+                - "80:80"
+            nginx:
+              image: nginx:latest
+              volumes:
+                - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+              ports:
+                - "8080:80"
+              depends_on:
+                - ws-server
+                - http-server
+                - web
+          EOL
+
+          docker-compose up -d
+          EOF
