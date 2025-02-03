@@ -1,0 +1,31 @@
+services:
+  ws-server:
+    build:
+      context: ./apps/ws-server
+    ports:
+      - "3001:3001"
+    networks:
+      - fcn-network
+
+  http-server:
+    build:
+      context: ./apps/http-server
+    ports:
+      - "3002:3002"
+    networks:
+      - fcn-network
+
+  web:
+    build:
+      context: ./apps/web
+    ports:
+      - "3000:3000"
+    networks:
+      - fcn-network
+    depends_on:
+      - ws-server
+      - http-server
+
+networks:
+  fcn-network:
+    driver: bridge
