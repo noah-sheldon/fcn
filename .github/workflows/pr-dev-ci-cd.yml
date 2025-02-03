@@ -21,7 +21,7 @@ jobs:
           cache: "pnpm"
 
       - name: Install pnpm
-        run: corepack enable && corepack prepare pnpm@latest --activate
+        run: npm install -g pnpm
 
       # Step 3: Install dependencies using pnpm (with caching)
       - name: Install dependencies
