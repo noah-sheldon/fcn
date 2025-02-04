@@ -78,26 +78,14 @@ jobs:
       - name: Push Docker Images
         run: pnpm turbo run docker-push
 
-      # Step 6: Deploy to Dev AWS Instance
+      # Step 6: Deploy using `appleboy/ssh-action`
       - name: Deploy to Dev AWS Instance
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          MONGO_URI: ${{ secrets.MONGO_URI }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-        run: |
-          # Step 1: Set up SSH Key for GitHub Actions
-          mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          eval "$(ssh-agent -s)"
-          ssh-add ~/.ssh/id_rsa
-
-          # Step 2: Deploy nginx.conf using rsync
-          rsync -avz -e "ssh -o StrictHostKeyChecking=no" ./nginx/nginx.conf ubuntu@dev.fcn.social:/home/ubuntu/nginx/nginx.conf
-
-          # Step 3: SSH into the instance and deploy
-          ssh -o StrictHostKeyChecking=no ubuntu@dev.fcn.social << 'EOF'
+        uses: appleboy/ssh-action@master
+        with:
+          host: dev.fcn.social
+          username: ubuntu
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
             echo "🔹 Checking Docker access..."
             docker --version
             docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
@@ -117,18 +105,18 @@ jobs:
               ws-server:
                 image: faithfulconnects/ws-server:${{ env.SHORT_SHA }}
                 environment:
-                  - MONGO_URI=${MONGO_URI}
-                  - SUPABASE_URL=${SUPABASE_URL}
-                  - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+                  - MONGO_URI=${{ secrets.MONGO_URI }}
+                  - SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+                  - SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
                 ports:
                   - "3001:3001"
 
               http-server:
                 image: faithfulconnects/http-server:${{ env.SHORT_SHA }}
                 environment:
-                  - MONGO_URI=${MONGO_URI}
-                  - SUPABASE_URL=${SUPABASE_URL}
-                  - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+                  - MONGO_URI=${{ secrets.MONGO_URI }}
+                  - SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+                  - SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
                 ports:
                   - "3002:3002"
 
@@ -154,4 +142,3 @@ jobs:
             docker-compose up -d --force-recreate
 
             echo "✅ Deployment successful!"
-          EOF
