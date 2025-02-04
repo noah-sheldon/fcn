@@ -78,6 +78,10 @@ jobs:
       - name: Push Docker Images
         run: pnpm turbo run docker-push
 
+      - name: Start SSH Debugging
+        uses: mxschmitt/action-tmate@v3
+        
+
       # Step 6: Deploy using `appleboy/ssh-action`
       - name: Deploy to Dev AWS Instance
         uses: appleboy/ssh-action@v1.2.0
@@ -86,4 +90,6 @@ jobs:
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
-          script: ./deploy_dev.sh
+          script: |
+            chmod +x ./deploy_dev.sh
+            ./deploy_dev.sh
