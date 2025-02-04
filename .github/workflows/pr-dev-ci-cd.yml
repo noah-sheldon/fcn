@@ -82,8 +82,8 @@ jobs:
       - name: Deploy to Dev AWS Instance
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: 54.162.66.62
+          host: ec2-54-162-66-62.compute-1.amazonaws.com
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
-          script: ./deploy.sh
+          script: ./deploy_dev.sh
