@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "echo 'No tests available' && exit 0",
-    "docker-build": "docker build -t faithfulconnects/web:latest -f Dockerfile .",
+    "docker-build": "docker build -t faithfulconnects/web:latest .",
     "docker-push": "docker push faithfulconnects/web:latest"
   },
   "dependencies": {
