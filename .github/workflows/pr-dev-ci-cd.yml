@@ -82,9 +82,8 @@ jobs:
       - name: Deploy to Dev AWS Instance
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: dev.fcn.social
+          host: 54.162.66.62
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
           script: ./deploy.sh
-            
