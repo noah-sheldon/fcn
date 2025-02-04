@@ -55,6 +55,10 @@ jobs:
       - name: Install pnpm
         run: npm install -g pnpm
 
+      # Step 4: Install dependencies (TurboRepo workspace-aware)
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       # Step 2: Log in to Docker Hub
       - name: Docker login
         uses: docker/login-action@v2
