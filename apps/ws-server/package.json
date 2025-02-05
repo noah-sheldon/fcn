@@ -8,8 +8,8 @@
     "dev": "pnpm run build && pnpm run start",
     "start": "node dist/index.js",
     "test": "echo 'No tests available' && exit 0",
-    "docker-build": "docker build -t faithfulconnects/ws-server:${IMAGE_TAG:-latest} .",
-    "docker-push": "docker push faithfulconnects/ws-server:${IMAGE_TAG:-latest}"
+    "docker-build": "export IMAGE_TAG=${IMAGE_TAG:-latest} && docker build -t faithfulconnects/ws-server:$IMAGE_TAG .",
+    "docker-push": "export IMAGE_TAG=${IMAGE_TAG:-latest} && docker push faithfulconnects/ws-server:$IMAGE_TAG"
   },
   "keywords": [],
   "author": "",
