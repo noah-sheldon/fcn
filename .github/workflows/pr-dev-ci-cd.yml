@@ -72,11 +72,17 @@ jobs:
 
       # Step 4: Build Docker images with TurboRepo
       - name: Build Docker Images
-        run: pnpm turbo run docker-build
+        run: |
+          pnpm turbo run docker-build
+        env:
+          SHORT_SHA: ${{ env.SHORT_SHA }}
 
       # Step 5: Push Docker images with TurboRepo
       - name: Push Docker Images
-        run: pnpm turbo run docker-push
+        run: |
+          pnpm turbo run docker-push
+        env:
+          SHORT_SHA: ${{ env.SHORT_SHA }}
 
       # Step 6: Deploy to Development Server
       - name: Setup SSH and Install Dependencies

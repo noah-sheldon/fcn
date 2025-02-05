@@ -8,8 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "test": "echo 'No tests available' && exit 0",
-    "docker-build": "docker build -t faithfulconnects/web:latest .",
-    "docker-push": "docker push faithfulconnects/web:latest"
+    "docker-build": "docker build -t faithfulconnects/web:$SHORT_SHA .",
+    "docker-push": "docker push faithfulconnects/web:$SHORT_SHA"
   },
   "dependencies": {
     "react": "^19.0.0",
