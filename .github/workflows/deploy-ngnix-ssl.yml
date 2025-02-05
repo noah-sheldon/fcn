@@ -1,9 +1,8 @@
 name: Deploy Nginx with SSL
 
 on:
-  push:
-    branches:
-      - main
+  pull_request:
+    types: [opened]
   schedule:
     - cron: "0 0 * * 1" # Runs every Monday at midnight
 
