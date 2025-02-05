@@ -135,16 +135,16 @@ jobs:
           key: ${{ secrets.SSH_DEV_PRIVATE_KEY }}
           script: |
             echo "🔹 Pulling latest Docker images..."
-            docker pull faithfulconnects/ws-server:${{ env.SHORT_SHA }}
-            docker pull faithfulconnects/http-server:${{ env.SHORT_SHA }}
-            docker pull faithfulconnects/web:${{ env.SHORT_SHA }}
+            docker pull faithfulconnects/ws-server:${{ env.IMAGE_TAG }}
+            docker pull faithfulconnects/http-server:${{ env.IMAGE_TAG }}
+            docker pull faithfulconnects/web:${{ env.IMAGE_TAG }}
+
 
             echo "🔹 Stopping existing containers..."
             docker-compose down || true
 
             echo "🔹 Writing updated docker-compose.yml..."
             cat > docker-compose.yml <<EOL
-            version: '3'
             services:
               ws-server:
                 image: faithfulconnects/ws-server:${{ env.SHORT_SHA }}
@@ -182,6 +182,7 @@ jobs:
             EOL
 
             echo "🔹 Restarting services..."
+            docker-compose pull
             docker-compose up -d --force-recreate
 
             echo "✅ Deployment successful!"
