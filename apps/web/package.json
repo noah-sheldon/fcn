@@ -7,9 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "echo 'No tests available' && exit 0",
-    "docker-build": "export IMAGE_TAG=${IMAGE_TAG:-latest} && docker build -t faithfulconnects/web:$IMAGE_TAG .",
-    "docker-push": "export IMAGE_TAG=${IMAGE_TAG:-latest} && docker push faithfulconnects/web:$IMAGE_TAG"
+    "test": "echo 'No tests available' && exit 0"
   },
   "dependencies": {
     "react": "^19.0.0",

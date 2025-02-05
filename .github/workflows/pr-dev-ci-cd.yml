@@ -68,28 +68,21 @@ jobs:
 
       - name: Set Image Tag
         run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            echo "IMAGE_TAG=pr-${{ github.event.pull_request.number }}" >> $GITHUB_ENV
-          else
-            echo "IMAGE_TAG=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_ENV
-          fi
+          echo "IMAGE_TAG=pr-${{ github.event.pull_request.number }}" >> $GITHUB_ENV
 
-      # ✅ Step 2: Debugging - Print Image Tag
-      - name: Debug Image Tag
-        run: |
-          echo "Using IMAGE_TAG: $IMAGE_TAG"
-
-      # Step 4: Build Docker images with TurboRepo
       - name: Build Docker Images
         run: |
-          pnpm turbo run docker-build
+          docker build -t faithfulconnects/ws-server:${{ env.IMAGE_TAG }} ./apps/ws-server
+          docker build -t faithfulconnects/http-server:${{ env.IMAGE_TAG }} ./apps/http-server
+          docker build -t faithfulconnects/web:${{ env.IMAGE_TAG }} ./apps/web
         env:
           IMAGE_TAG: ${{ env.IMAGE_TAG }}
 
-      # Step 5: Push Docker images with TurboRepo
       - name: Push Docker Images
         run: |
-          pnpm turbo run docker-push
+          docker push faithfulconnects/ws-server:${{ env.IMAGE_TAG }}
+          docker push faithfulconnects/http-server:${{ env.IMAGE_TAG }}
+          docker push faithfulconnects/web:${{ env.IMAGE_TAG }}
         env:
           IMAGE_TAG: ${{ env.IMAGE_TAG }}
 

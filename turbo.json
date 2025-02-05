@@ -24,18 +24,6 @@
     "dev": {
       "cache": false,
       "persistent": true
-    },
-    "docker-build": {
-      "dependsOn": ["build"],
-      "cache": false,
-      "outputs": [],
-      "persistent": false
-    },
-    "docker-push": {
-      "dependsOn": ["docker-build"],
-      "cache": false,
-      "outputs": [],
-      "persistent": false
     }
   }
 }
