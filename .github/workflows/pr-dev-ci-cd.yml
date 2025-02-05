@@ -140,7 +140,7 @@ jobs:
             cat > docker-compose.yml <<EOL
             services:
               ws-server:
-                image: faithfulconnects/ws-server:${{ env.SHORT_SHA }}
+                image: faithfulconnects/ws-server:${{ env.IMAGE_TAG }}
                 environment:
                   - MONGO_URI=${{ secrets.MONGO_URI }}
                   - SUPABASE_URL=${{ secrets.SUPABASE_URL }}
@@ -149,7 +149,7 @@ jobs:
                   - '3001:3001'
 
               http-server:
-                image: faithfulconnects/http-server:${{ env.SHORT_SHA }}
+                image: faithfulconnects/http-server:${{ env.IMAGE_TAG }}
                 environment:
                   - MONGO_URI=${{ secrets.MONGO_URI }}
                   - SUPABASE_URL=${{ secrets.SUPABASE_URL }}
@@ -158,7 +158,7 @@ jobs:
                   - '3002:3002'
 
               web:
-                image: faithfulconnects/web:${{ env.SHORT_SHA }}
+                image: faithfulconnects/web:${{ env.IMAGE_TAG }}
                 ports:
                   - '3000:3000'
 
