@@ -66,23 +66,32 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # Step 3: Get Short SHA (7 characters)
-      - name: Get Short SHA
-        run: echo "SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_ENV
+      - name: Set Image Tag
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "IMAGE_TAG=pr-${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+          else
+            echo "IMAGE_TAG=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_ENV
+          fi
+
+      # ✅ Step 2: Debugging - Print Image Tag
+      - name: Debug Image Tag
+        run: |
+          echo "Using IMAGE_TAG: $IMAGE_TAG"
 
       # Step 4: Build Docker images with TurboRepo
       - name: Build Docker Images
         run: |
           pnpm turbo run docker-build
         env:
-          SHORT_SHA: ${{ env.SHORT_SHA }}
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
 
       # Step 5: Push Docker images with TurboRepo
       - name: Push Docker Images
         run: |
           pnpm turbo run docker-push
         env:
-          SHORT_SHA: ${{ env.SHORT_SHA }}
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
 
       # Step 6: Deploy to Development Server
       - name: Setup SSH and Install Dependencies
@@ -93,7 +102,7 @@ jobs:
           key: ${{ secrets.SSH_DEV_PRIVATE_KEY }}
           script: |
             echo "🔹 Checking & Installing Dependencies..."
-            
+
             # Install Docker if not installed
             if ! command -v docker &> /dev/null; then
               echo "🔹 Installing Docker..."
@@ -104,7 +113,7 @@ jobs:
             else
               echo "✅ Docker is already installed."
             fi
-            
+
             # Install Docker Compose if not installed
             if ! command -v docker-compose &> /dev/null; then
               echo "🔹 Installing Docker Compose..."
@@ -113,7 +122,7 @@ jobs:
             else
               echo "✅ Docker Compose is already installed."
             fi
-            
+
             # Verify Installation
             docker --version
             docker-compose --version
