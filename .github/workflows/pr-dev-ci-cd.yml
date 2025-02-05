@@ -87,7 +87,7 @@ jobs:
           touch /home/runner/.ssh/known_hosts
           echo "${{ secrets.KNOWN_HOSTS }}" &> /home/runner/.ssh/known_hosts
           chmod 700 /home/runner/ssh_key
-          ssh -i ~/ssh_key ubuntu@ec2-54-162-66-62.compute-1.amazonaws.com -t "
+          ssh -o StrictHostKeyChecking=no -i ~/ssh_key ubuntu@ec2-54-162-66-62.compute-1.amazonaws.com -t "
             echo '🔹 Checking Docker access...'
             docker --version
             docker login -u '${{ secrets.DOCKERHUB_USERNAME }}' -p '${{ secrets.DOCKERHUB_TOKEN }}'
@@ -145,4 +145,3 @@ jobs:
 
             echo '✅ Deployment successful!'
           "
-          
