@@ -78,16 +78,13 @@ jobs:
       - name: Push Docker Images
         run: pnpm turbo run docker-push
 
-      # Step 6: Deploy using `appleboy/ssh-action`
-      - name: Deploy to Dev AWS Instance
-        run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" &> ~/ssh_key
-          mkdir -p /home/runner/.ssh
-          ls /home/runner/.ssh
-          touch /home/runner/.ssh/known_hosts
-          echo "${{ secrets.KNOWN_HOSTS }}" &> /home/runner/.ssh/known_hosts
-          chmod 700 ~/ssh_key
-          ssh -i ~/ssh_key ubuntu@ec2-54-162-66-62.compute-1.amazonaws.com -t "
+      - name: Deploy using appleboy/ssh-action
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
             echo '🔹 Checking Docker access...'
             docker --version
             docker login -u '${{ secrets.DOCKERHUB_USERNAME }}' -p '${{ secrets.DOCKERHUB_TOKEN }}'
@@ -102,46 +99,45 @@ jobs:
 
             echo '🔹 Writing updated docker-compose.yml...'
             cat > docker-compose.yml <<EOL
-          version: '3'
-          services:
-            ws-server:
-              image: faithfulconnects/ws-server:${{ env.SHORT_SHA }}
-              environment:
-                - MONGO_URI=${{ secrets.MONGO_URI }}
-                - SUPABASE_URL=${{ secrets.SUPABASE_URL }}
-                - SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
-              ports:
-                - '3001:3001'
+            version: '3'
+            services:
+              ws-server:
+                image: faithfulconnects/ws-server:${{ env.SHORT_SHA }}
+                environment:
+                  - MONGO_URI=${{ secrets.MONGO_URI }}
+                  - SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+                  - SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+                ports:
+                  - '3001:3001'
 
-            http-server:
-              image: faithfulconnects/http-server:${{ env.SHORT_SHA }}
-              environment:
-                - MONGO_URI=${{ secrets.MONGO_URI }}
-                - SUPABASE_URL=${{ secrets.SUPABASE_URL }}
-                - SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
-              ports:
-                - '3002:3002'
+              http-server:
+                image: faithfulconnects/http-server:${{ env.SHORT_SHA }}
+                environment:
+                  - MONGO_URI=${{ secrets.MONGO_URI }}
+                  - SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+                  - SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+                ports:
+                  - '3002:3002'
 
-            web:
-              image: faithfulconnects/web:${{ env.SHORT_SHA }}
-              ports:
-                - '3000:3000'
+              web:
+                image: faithfulconnects/web:${{ env.SHORT_SHA }}
+                ports:
+                  - '3000:3000'
 
-            nginx:
-              image: nginx:latest
-              volumes:
-                - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-              ports:
-                - '8080:80'
-              depends_on:
-                - ws-server
-                - http-server
-                - web
-          EOL
+              nginx:
+                image: nginx:latest
+                volumes:
+                  - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+                ports:
+                  - '8080:80'
+                depends_on:
+                  - ws-server
+                  - http-server
+                  - web
+            EOL
 
             echo '🔹 Restarting services...'
             docker-compose pull
             docker-compose up -d --force-recreate
 
             echo '✅ Deployment successful!'
-          "
