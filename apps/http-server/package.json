@@ -7,8 +7,8 @@
     "start": "node ./dist/index.js",
     "dev": "pnpm run build && pnpm run start",
     "test": "echo 'No tests available' && exit 0",
-    "docker-build": "docker build -t faithfulconnects/http-server:$IMAGE_TAG .",
-    "docker-push": "docker push faithfulconnects/http-server:$IMAGE_TAG"
+    "docker-build": "docker build -t faithfulconnects/http-server:${IMAGE_TAG:-latest} .",
+    "docker-push": "docker push faithfulconnects/http-server:${IMAGE_TAG:-latest}"
   },
   "keywords": [],
   "author": "",

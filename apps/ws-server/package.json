@@ -2,13 +2,14 @@
   "name": "ws-server",
   "version": "1.0.0",
   "main": "index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc -b",
+    "build": "rm -rf dist && tsc -b",
     "dev": "pnpm run build && pnpm run start",
     "start": "node dist/index.js",
     "test": "echo 'No tests available' && exit 0",
-    "docker-build": "docker build -t faithfulconnects/ws-server:$IMAGE_TAG .",
-    "docker-push": "docker push faithfulconnects/ws-server:$IMAGE_TAG"
+    "docker-build": "docker build -t faithfulconnects/ws-server:${IMAGE_TAG:-latest} .",
+    "docker-push": "docker push faithfulconnects/ws-server:${IMAGE_TAG:-latest}"
   },
   "keywords": [],
   "author": "",
