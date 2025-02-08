@@ -148,6 +148,8 @@ jobs:
                   - SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
                 ports:
                   - '3001:3001'
+                networks:
+                  - fcn-network
 
               http-server:
                 image: faithfulconnects/http-server:${{ env.IMAGE_TAG }}
@@ -157,11 +159,15 @@ jobs:
                   - SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
                 ports:
                   - '3002:3002'
+                networks:
+                  - fcn-network
 
               web:
                 image: faithfulconnects/web:${{ env.IMAGE_TAG }}
                 ports:
                   - '3000:3000'
+                networks:
+                  - fcn-network
                   
             networks:
               fcn-network:
