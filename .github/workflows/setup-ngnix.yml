@@ -38,23 +38,16 @@ jobs:
               echo "SERVER_USER=${{ secrets.SSH_PROD_USERNAME }}" >> $GITHUB_ENV
               ;;
             *)
-              echo "Invalid server selection!"
+              echo "❌ Invalid server selection!"
               exit 1
               ;;
           esac
 
-      - name: Deploy and Configure Nginx on ${{ github.event.inputs.target_server }}
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ env.SERVER_HOST }}
-          username: ${{ env.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            echo "🔹 Updating system and installing Nginx..."
-            sudo apt update && sudo apt install -y nginx
-
-            echo "🔹 Creating nginx directory..."
-            sudo mkdir -p /home/${{ env.SERVER_USER }}/nginx
+      - name: Debug Nginx Config File Before Upload
+        run: |
+          echo "🔍 Checking if nginx.conf exists..."
+          ls -lah ./nginx/nginx.conf || echo "❌ ERROR: nginx.conf not found!"
+          cat ./nginx/nginx.conf || echo "⚠️ WARNING: nginx.conf is empty!"
 
       - name: Upload `nginx.conf` to Selected Server
         uses: appleboy/scp-action@master
@@ -64,18 +57,25 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "./nginx/nginx.conf"
           target: "/home/${{ env.SERVER_USER }}/nginx.conf"
+          overwrite: true
 
-      - name: Apply Nginx Configuration on ${{ github.event.inputs.target_server }}
+      - name: Install and Configure Nginx on ${{ github.event.inputs.target_server }}
         uses: appleboy/ssh-action@master
         with:
           host: ${{ env.SERVER_HOST }}
           username: ${{ env.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            echo "🔹 Updating system and installing Nginx..."
+            sudo apt update && sudo apt install -y nginx
+
             echo "🔹 Moving new Nginx configuration..."
             sudo mv /home/${{ env.SERVER_USER }}/nginx.conf /etc/nginx/nginx.conf
 
-            echo "🔹 Restarting Nginx..."
+            echo "🔹 Setting correct file permissions..."
+            sudo chmod 644 /etc/nginx/nginx.conf
+
+            echo "🔹 Restarting Nginx to apply changes..."
             sudo systemctl restart nginx
             sudo systemctl enable nginx
 
