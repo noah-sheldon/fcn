@@ -70,6 +70,9 @@ jobs:
           username: ${{ env.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            echo "🔹 Ensuring Docker network exists..."
+            docker network ls | grep "fcn-network" || docker network create fcn-network
+
             echo "🔹 Pulling latest Nginx image..."
             docker pull faithfulconnects/${{ env.ENV_TAG }}:${{ github.sha }}
 
@@ -77,7 +80,7 @@ jobs:
             docker stop nginx || true
             docker rm nginx || true
             docker run -d --name nginx -p 80:80 -p 443:443 \
-              --network fcn-network \
+              --network fcn-network \   # Attach to existing network
               --restart unless-stopped \
               faithfulconnects/${{ env.ENV_TAG }}:${{ github.sha }}
 
