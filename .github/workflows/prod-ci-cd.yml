@@ -5,6 +5,9 @@ on:
     branches:
       - production  # 🚀 Runs only when merged to `production`
 
+permissions:
+  contents: write
+
 jobs:
   versioning:
     runs-on: ubuntu-latest
