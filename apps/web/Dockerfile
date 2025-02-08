@@ -1,5 +1,5 @@
-# Use Node.js 22 as the base image
-FROM node:22
+# ---- Base Build Stage ----
+FROM node:22 AS build
 
 # Install pnpm globally
 RUN npm install -g pnpm
@@ -7,20 +7,37 @@ RUN npm install -g pnpm
 # Set the working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json
-COPY package*.json ./
+# Copy package.json and lock file first (for efficient caching)
+COPY package.json ./
 
-# Install dependencies
+# Install dependencies (including dev dependencies for build)
 RUN pnpm install
 
-# Copy the rest of the application code
+# Copy the full Next.js project source code
 COPY . .
 
-# Install dependencies
-RUN pnpm build
+# Build the Next.js application
+RUN pnpm run build
+
+# ---- Production Stage (No Source Code) ----
+FROM node:22 AS production
+
+# Set the working directory
+WORKDIR /app
+
+# Install pnpm globally
+RUN npm install -g pnpm
+
+# Copy only the built output (No raw Next.js source code)
+COPY --from=build /app/.next ./.next
+COPY --from=build /app/public ./public
+COPY --from=build /app/package.json ./
+
+# Install only production dependencies
+RUN pnpm install --prod
 
 # Expose the web application port
 EXPOSE 3000
 
-# Start the web application
+# Start the Next.js server
 CMD ["pnpm", "start"]

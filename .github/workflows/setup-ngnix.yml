@@ -1,0 +1,29 @@
+name: Setup Nginx
+
+on:
+  workflow_dispatch:  # Manually triggered when needed
+
+jobs:
+  setup-nginx:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_DEV_PRIVATE_KEY }}
+
+      - name: Deploy and Configure Nginx
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_DEV_USERNAME }}@${{ secrets.SSH_DEV_HOST }} << 'EOF'
+            sudo apt update && sudo apt install -y nginx
+            sudo mkdir -p /home/${{ secrets.SSH_DEV_USERNAME }}/nginx
+            sudo touch /home/${{ secrets.SSH_DEV_USERNAME }}/nginx/nginx.conf
+            echo "${{ secrets.NGINX_CONFIG }}" | sudo tee /home/${{ secrets.SSH_DEV_USERNAME }}/nginx/nginx.conf > /dev/null
+            sudo mv /home/${{ secrets.SSH_DEV_USERNAME }}/nginx/nginx.conf /etc/nginx/nginx.conf
+            sudo systemctl restart nginx
+            echo "✅ Nginx setup completed."
+          EOF

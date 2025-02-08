@@ -1,0 +1,24 @@
+name: Renew SSL Certificates
+
+on:
+  schedule:
+    - cron: "0 0 1 * *" # Runs on the 1st of every month at midnight UTC
+  workflow_dispatch: # Allows manual trigger if needed
+
+jobs:
+  renew-ssl:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_DEV_PRIVATE_KEY }}
+
+      - name: Check and Renew SSL
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_DEV_USERNAME }}@${{ secrets.SSH_DEV_HOST }} << 'EOF'
+            sudo apt update && sudo apt install -y certbot python3-certbot-nginx
+            sudo certbot renew --quiet --renew-hook "systemctl restart nginx"
+            echo "✅ SSL renewal completed."
+          EOF
