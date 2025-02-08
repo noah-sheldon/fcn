@@ -165,15 +165,17 @@ jobs:
                   - '3000:3000'
 
               nginx:
-                image: nginx:latest
+                image: faithfulconnects/nginx_dev:latest 
                 volumes:
                   - ./nginx/nginx.conf:/etc/nginx/nginx.conf
                 ports:
-                  - '8080:80'
+                  - '80:80'
+                  - '443:443'
                 depends_on:
                   - ws-server
                   - http-server
                   - web
+                  
             networks:
               fcn-network:
                 driver: bridge
