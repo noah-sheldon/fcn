@@ -1,29 +1,82 @@
-name: Setup Nginx
+name: Setup Nginx on a Selected Server
 
 on:
-  workflow_dispatch:  # Manually triggered when needed
+  workflow_dispatch: # Manually triggered with server selection
+    inputs:
+      target_server:
+        description: "Select the server to deploy Nginx"
+        required: true
+        default: "DEV"
+        type: choice
+        options:
+          - DEV
+          - BETA
+          - PROD
 
 jobs:
   setup-nginx:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Install SSH key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_DEV_PRIVATE_KEY }}
-
-      - name: Deploy and Configure Nginx
+      - name: Set Server Variables Based on Selection
+        id: set_server
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_DEV_USERNAME }}@${{ secrets.SSH_DEV_HOST }} << 'EOF'
+          case "${{ github.event.inputs.target_server }}" in
+            DEV)
+              echo "SERVER_HOST=${{ secrets.SSH_DEV_HOST }}" >> $GITHUB_ENV
+              echo "SERVER_USER=${{ secrets.SSH_DEV_USERNAME }}" >> $GITHUB_ENV
+              ;;
+            BETA)
+              echo "SERVER_HOST=${{ secrets.SSH_BETA_HOST }}" >> $GITHUB_ENV
+              echo "SERVER_USER=${{ secrets.SSH_BETA_USERNAME }}" >> $GITHUB_ENV
+              ;;
+            PROD)
+              echo "SERVER_HOST=${{ secrets.SSH_PROD_HOST }}" >> $GITHUB_ENV
+              echo "SERVER_USER=${{ secrets.SSH_PROD_USERNAME }}" >> $GITHUB_ENV
+              ;;
+            *)
+              echo "Invalid server selection!"
+              exit 1
+              ;;
+          esac
+
+      - name: Deploy and Configure Nginx on ${{ github.event.inputs.target_server }}
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.SERVER_HOST }}
+          username: ${{ env.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo "🔹 Updating system and installing Nginx..."
             sudo apt update && sudo apt install -y nginx
-            sudo mkdir -p /home/${{ secrets.SSH_DEV_USERNAME }}/nginx
-            sudo touch /home/${{ secrets.SSH_DEV_USERNAME }}/nginx/nginx.conf
-            echo "${{ secrets.NGINX_CONFIG }}" | sudo tee /home/${{ secrets.SSH_DEV_USERNAME }}/nginx/nginx.conf > /dev/null
-            sudo mv /home/${{ secrets.SSH_DEV_USERNAME }}/nginx/nginx.conf /etc/nginx/nginx.conf
+
+            echo "🔹 Creating nginx directory..."
+            sudo mkdir -p /home/${{ env.SERVER_USER }}/nginx
+
+      - name: Upload `nginx.conf` to Selected Server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ env.SERVER_HOST }}
+          username: ${{ env.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "./nginx/nginx.conf"
+          target: "/home/${{ env.SERVER_USER }}/nginx.conf"
+
+      - name: Apply Nginx Configuration on ${{ github.event.inputs.target_server }}
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.SERVER_HOST }}
+          username: ${{ env.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo "🔹 Moving new Nginx configuration..."
+            sudo mv /home/${{ env.SERVER_USER }}/nginx.conf /etc/nginx/nginx.conf
+
+            echo "🔹 Restarting Nginx..."
             sudo systemctl restart nginx
-            echo "✅ Nginx setup completed."
-          EOF
+            sudo systemctl enable nginx
+
+            echo "✅ Nginx setup completed on ${{ github.event.inputs.target_server }}"
