@@ -1,7 +1,7 @@
-name: Setup Nginx on a Selected Server
+name: Deploy Nginx
 
 on:
-  workflow_dispatch: # Manually triggered with server selection
+  workflow_dispatch: # Manual trigger
     inputs:
       target_server:
         description: "Select the server to deploy Nginx"
@@ -14,26 +14,29 @@ on:
           - PROD
 
 jobs:
-  setup-nginx:
+  build-and-push:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Set Server Variables Based on Selection
-        id: set_server
+      - name: Set Environment Variables Based on Target Server
+        id: set-env
         run: |
           case "${{ github.event.inputs.target_server }}" in
             DEV)
+              echo "ENV_TAG=nginx_dev" >> $GITHUB_ENV
               echo "SERVER_HOST=${{ secrets.SSH_DEV_HOST }}" >> $GITHUB_ENV
               echo "SERVER_USER=${{ secrets.SSH_DEV_USERNAME }}" >> $GITHUB_ENV
               ;;
             BETA)
+              echo "ENV_TAG=nginx_beta" >> $GITHUB_ENV
               echo "SERVER_HOST=${{ secrets.SSH_BETA_HOST }}" >> $GITHUB_ENV
               echo "SERVER_USER=${{ secrets.SSH_BETA_USERNAME }}" >> $GITHUB_ENV
               ;;
             PROD)
+              echo "ENV_TAG=nginx_prod" >> $GITHUB_ENV
               echo "SERVER_HOST=${{ secrets.SSH_PROD_HOST }}" >> $GITHUB_ENV
               echo "SERVER_USER=${{ secrets.SSH_PROD_USERNAME }}" >> $GITHUB_ENV
               ;;
@@ -43,40 +46,39 @@ jobs:
               ;;
           esac
 
-      - name: Debug Nginx Config File Before Upload
-        run: |
-          echo "🔍 Checking if nginx.conf exists..."
-          ls -lah ./nginx/nginx.conf || echo "❌ ERROR: nginx.conf not found!"
-          cat ./nginx/nginx.conf || echo "⚠️ WARNING: nginx.conf is empty!"
-
-      - name: Upload `nginx.conf` to Selected Server
-        uses: appleboy/scp-action@master
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
         with:
-          host: ${{ env.SERVER_HOST }}
-          username: ${{ env.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "./nginx/nginx.conf"
-          target: "/home/${{ env.SERVER_USER }}/nginx.conf"
-          overwrite: true
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Install and Configure Nginx on ${{ github.event.inputs.target_server }}
+      - name: Build and Push Nginx Docker Image
+        run: |
+          docker build --build-arg ENV=${{ github.event.inputs.target_server }} \
+            -t faithfulconnects/${{ env.ENV_TAG }}:${{ github.sha }} ./nginx
+          docker push faithfulconnects/${{ env.ENV_TAG }}:${{ github.sha }}
+
+  deploy-nginx:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+
+    steps:
+      - name: Deploy Nginx on Server
         uses: appleboy/ssh-action@master
         with:
           host: ${{ env.SERVER_HOST }}
           username: ${{ env.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            echo "🔹 Updating system and installing Nginx..."
-            sudo apt update && sudo apt install -y nginx
+            echo "🔹 Pulling latest Nginx image..."
+            docker pull faithfulconnects/${{ env.ENV_TAG }}:${{ github.sha }}
 
-            echo "🔹 Moving new Nginx configuration..."
-            sudo mv /home/${{ env.SERVER_USER }}/nginx.conf /etc/nginx/nginx.conf
+            echo "🔹 Updating Nginx container..."
+            docker stop nginx || true
+            docker rm nginx || true
+            docker run -d --name nginx -p 80:80 -p 443:443 \
+              --network fcn-network \
+              --restart unless-stopped \
+              faithfulconnects/${{ env.ENV_TAG }}:${{ github.sha }}
 
-            echo "🔹 Setting correct file permissions..."
-            sudo chmod 644 /etc/nginx/nginx.conf
-
-            echo "🔹 Restarting Nginx to apply changes..."
-            sudo systemctl restart nginx
-            sudo systemctl enable nginx
-
-            echo "✅ Nginx setup completed on ${{ github.event.inputs.target_server }}"
+            echo "✅ Nginx deployment completed on ${{ github.event.inputs.target_server }}!"
