@@ -1,4 +1,4 @@
-name: Deploy to AWS Beta Server
+name: Deploy to Beta Server
 
 on:
   push:
@@ -23,6 +23,19 @@ jobs:
           LATEST_TAG=$(git tag --sort=-v:refname | grep 'beta-' | head -n 1 || echo "beta-0.0.0")
           echo "LATEST_TAG=$LATEST_TAG"
           echo "LATEST_TAG=$LATEST_TAG" >> $GITHUB_ENV
+
+      # Step 2: Set up Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 22
+
+      # Step 3: Install pnpm
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Install semver
+        run: pnpm install -g semver
 
       - name: Determine New Version (Commit Message-Based)
         id: new_version
