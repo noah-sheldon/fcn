@@ -6,11 +6,6 @@ services:
       - "3001:3001"
     networks:
       - fcn-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   http-server:
     build:
@@ -19,11 +14,6 @@ services:
       - "3002:3002"
     networks:
       - fcn-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   web:
     build:
@@ -32,36 +22,19 @@ services:
       - "3000:3000"
     networks:
       - fcn-network
-    depends_on:
-      ws-server:
-        condition: service_healthy
-      http-server:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   nginx:
-    image: nginx:latest
+    build:
+      context: ./nginx # This folder should contain the Dockerfile for Nginx
     container_name: nginx
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - /etc/letsencrypt:/etc/letsencrypt
       - /var/lib/letsencrypt:/var/lib/letsencrypt
     networks:
       - fcn-network
-    depends_on:
-      web:
-        condition: service_healthy
-      http-server:
-        condition: service_healthy
-      ws-server:
-        condition: service_healthy
 
 networks:
   fcn-network:
