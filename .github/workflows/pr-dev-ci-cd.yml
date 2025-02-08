@@ -134,7 +134,6 @@ jobs:
             docker pull faithfulconnects/http-server:${{ env.IMAGE_TAG }}
             docker pull faithfulconnects/web:${{ env.IMAGE_TAG }}
 
-
             echo "🔹 Stopping existing containers..."
             docker-compose down || true
 
@@ -163,17 +162,7 @@ jobs:
                 image: faithfulconnects/web:${{ env.IMAGE_TAG }}
                 ports:
                   - '3000:3000'
-
-              nginx:
-                image: nginx:latest
-                volumes:
-                  - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-                ports:
-                  - '8080:80'
-                depends_on:
-                  - ws-server
-                  - http-server
-                  - web
+                  
             networks:
               fcn-network:
                 driver: bridge
