@@ -69,21 +69,22 @@ jobs:
 
             echo "🔹 Pulling latest Nginx image..."
             docker pull faithfulconnects/${{ env.ENV_TAG }}
-
             echo "🔹 Checking if Nginx is already running..."
             if [ "$(docker ps -q -f name=nginx)" ]; then
                 echo "🔹 Stopping existing Nginx container..."
-                docker stop nginx
-                docker rm nginx
+                docker stop nginx || true
+                docker rm nginx || true
+            fi
+
+            echo "🔹 Removing any stopped Nginx containers..."
+            if [ "$(docker ps -aq -f name=nginx)" ]; then
+                docker rm nginx || true
             fi
 
             echo "🔹 Running new Nginx container..."
             docker run -d --name nginx -p 80:80 -p 443:443 \
               --network fcn-network \
               --restart unless-stopped \
-              -v /etc/letsencrypt:/etc/letsencrypt \
-              -v /var/lib/letsencrypt:/var/lib/letsencrypt \
               faithfulconnects/${{ env.ENV_TAG }}
-
 
             echo "✅ Nginx deployment completed on ${{ github.event.inputs.target_server }}!"
