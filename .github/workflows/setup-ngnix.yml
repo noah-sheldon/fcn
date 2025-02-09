@@ -69,8 +69,8 @@ jobs:
             echo "🔹 Pulling latest Nginx image..."
             docker pull faithfulconnects/nginx:${{ github.event.inputs.target_server }}
 
-            echo "🔹 Running new Nginx container (nginx_new)..."
-            docker run -d --name nginx_new -p 80:80 -p 443:443 \
+            echo "🔹 Running new Nginx container (nginx_new) without exposing ports..."
+            docker run -d --name nginx_new \
               -e NGINX_CONFIG=${{ env.CONFIG_FILE }} \
               -v /etc/letsencrypt:/etc/letsencrypt:ro \
               --network ubuntu_fcn-network \
@@ -78,14 +78,32 @@ jobs:
               faithfulconnects/nginx:${{ github.event.inputs.target_server }}
 
             echo "🔹 Waiting for the new container to be ready..."
-            sleep 5  # Allow Nginx to start
+            sleep 5  # Allow Nginx to initialize
 
-            echo "🔹 Swapping new container with existing one..."
-            docker rename nginx nginx_old || true
-            docker rename nginx_new nginx
+            echo "🔹 Checking if new Nginx is running correctly..."
+            if docker exec nginx_new nginx -t; then
+              echo "✅ New Nginx container is healthy. Proceeding with swap..."
+              
+              echo "🔹 Swapping new container with existing one..."
+              docker stop nginx || true
+              docker rename nginx nginx_old || true
+              docker rename nginx_new nginx
 
-            echo "🔹 Removing old Nginx container..."
-            docker stop nginx_old || true
-            docker rm nginx_old || true
+              echo "🔹 Restarting Nginx with exposed ports..."
+              docker run -d --name nginx -p 80:80 -p 443:443 \
+                -e NGINX_CONFIG=${{ env.CONFIG_FILE }} \
+                -v /etc/letsencrypt:/etc/letsencrypt:ro \
+                --network ubuntu_fcn-network \
+                --restart unless-stopped \
+                faithfulconnects/nginx:${{ github.event.inputs.target_server }}
 
-            echo "✅ Zero downtime deployment completed on ${{ github.event.inputs.target_server }}!"
+              echo "🔹 Removing old Nginx container..."
+              docker rm nginx_old || true
+
+              echo "✅ Zero downtime deployment completed on ${{ github.event.inputs.target_server }}!"
+            else
+              echo "❌ New Nginx container failed health check. Rolling back..."
+              docker stop nginx_new || true
+              docker rm nginx_new || true
+              exit 1
+            fi
