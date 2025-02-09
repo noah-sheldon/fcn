@@ -152,6 +152,8 @@ jobs:
               ws-server:
                 image: faithfulconnects/ws-server:${{ env.IMAGE_TAG }}
                 container_name: ws-server
+                networks:
+                  - fcn-network
                 env_file:
                   - .env
                 ports:
@@ -160,6 +162,8 @@ jobs:
               http-server:
                 image: faithfulconnects/http-server:${{ env.IMAGE_TAG }}
                 container_name: http-server
+                networks:
+                  - fcn-network
                 env_file:
                   - .env
                 ports:
@@ -168,6 +172,8 @@ jobs:
               web:
                 image: faithfulconnects/web:${{ env.IMAGE_TAG }}
                 container_name: web
+                networks:
+                  - fcn-network
                 ports:
                   - '3000:3000'
 
