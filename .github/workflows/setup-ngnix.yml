@@ -69,7 +69,7 @@ jobs:
             echo "🔹 Pulling latest Nginx image..."
             docker pull faithfulconnects/nginx:${{ github.event.inputs.target_server }}
 
-            echo "🔹 Running new Nginx container (nginx_new) without exposing ports..."
+            echo "🔹 Running new Nginx container (nginx_new) without binding ports..."
             docker run -d --name nginx_new \
               -e NGINX_CONFIG=${{ env.CONFIG_FILE }} \
               -v /etc/letsencrypt:/etc/letsencrypt:ro \
@@ -84,21 +84,22 @@ jobs:
             if docker exec nginx_new nginx -t; then
               echo "✅ New Nginx container is healthy. Proceeding with swap..."
               
-              echo "🔹 Swapping new container with existing one..."
+              echo "🔹 Stopping old Nginx container..."
               docker stop nginx || true
-              docker rename nginx nginx_old || true
+              
+              echo "🔹 Removing old Nginx container..."
+              docker rm nginx || true
+              
+              echo "🔹 Renaming new container to nginx..."
               docker rename nginx_new nginx
 
-              echo "🔹 Restarting Nginx with exposed ports..."
+              echo "🔹 Restarting new Nginx with exposed ports..."
               docker run -d --name nginx -p 80:80 -p 443:443 \
                 -e NGINX_CONFIG=${{ env.CONFIG_FILE }} \
                 -v /etc/letsencrypt:/etc/letsencrypt:ro \
                 --network ubuntu_fcn-network \
                 --restart unless-stopped \
                 faithfulconnects/nginx:${{ github.event.inputs.target_server }}
-
-              echo "🔹 Removing old Nginx container..."
-              docker rm nginx_old || true
 
               echo "✅ Zero downtime deployment completed on ${{ github.event.inputs.target_server }}!"
             else
