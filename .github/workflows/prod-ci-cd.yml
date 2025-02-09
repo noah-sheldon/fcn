@@ -27,7 +27,7 @@ jobs:
           node-version: 22
 
       # ✅ Step 2: Install pnpm (Needed for package management)
-      - name: Install pnpm
+      - name: Install semver
         run: npm install -g semver
 
       # ✅ Step 4: Get Latest Git Tag
