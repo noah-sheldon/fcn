@@ -56,7 +56,7 @@ jobs:
           docker build --no-cache -t faithfulconnects/nginx:${{ github.event.inputs.target_server }} ./nginx
           docker push faithfulconnects/nginx:${{ github.event.inputs.target_server }}
 
-      - name: Deploy Nginx on Server
+      - name: Deploy Nginx on Server with Zero Downtime
         uses: appleboy/ssh-action@master
         with:
           host: ${{ env.SERVER_HOST }}
@@ -69,22 +69,23 @@ jobs:
             echo "🔹 Pulling latest Nginx image..."
             docker pull faithfulconnects/nginx:${{ github.event.inputs.target_server }}
 
-            echo "🔹 Checking if an Nginx container already exists..."
-            if [ "$(docker ps -q -f name=nginx)" ]; then
-              echo "✅ Nginx container found. Restarting..."
-              docker restart nginx
-            else
-              echo "🔹 Removing old stopped Nginx container (if exists)..."
-              docker rm nginx || true
-              
-              echo "🔹 Running new Nginx container..."
-              docker run -d --name nginx -p 80:80 -p 443:443 \
-                -v /etc/nginx-configs/${{ env.CONFIG_FILE }}:/etc/nginx/nginx.conf:ro \
-                -v /etc/letsencrypt:/etc/letsencrypt:ro \
-                --network ubuntu_fcn-network \
-                --pull always \
-                --restart unless-stopped \
-                faithfulconnects/nginx:${{ github.event.inputs.target_server }}
-            fi
+            echo "🔹 Running new Nginx container (nginx_new)..."
+            docker run -d --name nginx_new -p 80:80 -p 443:443 \
+              -e NGINX_CONFIG=${{ env.CONFIG_FILE }} \
+              -v /etc/letsencrypt:/etc/letsencrypt:ro \
+              --network ubuntu_fcn-network \
+              --restart unless-stopped \
+              faithfulconnects/nginx:${{ github.event.inputs.target_server }}
 
-            echo "✅ Nginx deployment completed on ${{ github.event.inputs.target_server }}!"
+            echo "🔹 Waiting for the new container to be ready..."
+            sleep 5  # Allow Nginx to start
+
+            echo "🔹 Swapping new container with existing one..."
+            docker rename nginx nginx_old || true
+            docker rename nginx_new nginx
+
+            echo "🔹 Removing old Nginx container..."
+            docker stop nginx_old || true
+            docker rm nginx_old || true
+
+            echo "✅ Zero downtime deployment completed on ${{ github.event.inputs.target_server }}!"
