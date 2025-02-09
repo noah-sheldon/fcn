@@ -53,8 +53,8 @@ jobs:
 
       - name: Build and Push Nginx Docker Image
         run: |
-          docker build --no-cache -t faithfulconnects/nginx ./nginx
-          docker push faithfulconnects/nginx
+          docker build --no-cache -t faithfulconnects/nginx:${{ github.event.inputs.target_server }} ./nginx
+          docker push faithfulconnects/nginx:${{ github.event.inputs.target_server }}
 
       - name: Deploy Nginx on Server
         uses: appleboy/ssh-action@master
@@ -63,36 +63,25 @@ jobs:
           username: ${{ env.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            echo "🔹 Copying correct Nginx config..."
-            scp ./nginx-configs/${{ env.CONFIG_FILE }} ${{ env.SERVER_USER }}@${{ env.SERVER_HOST }}:/etc/nginx/nginx.conf
-
             echo "🔹 Ensuring Docker network exists..."
             docker network ls | grep "ubuntu_fcn-network" || docker network create ubuntu_fcn-network
 
             echo "🔹 Pulling latest Nginx image..."
-            docker pull faithfulconnects/nginx
+            docker pull faithfulconnects/nginx:${{ github.event.inputs.target_server }}
 
             echo "🔹 Checking if Nginx is already running..."
             if [ "$(docker ps -q -f name=nginx)" ]; then
-                echo "🔹 Stopping existing Nginx container..."
-                docker stop nginx || true
-                docker rm nginx || true
+              echo "🔹 Reloading Nginx configuration..."
+              docker exec nginx nginx -t && docker exec nginx nginx -s reload
+            else
+              echo "🔹 Running new Nginx container..."
+              docker run -d --name nginx -p 80:80 -p 443:443 \
+                -v /etc/nginx-configs/${{ env.CONFIG_FILE }}:/etc/nginx/nginx.conf:ro \
+                -v /etc/letsencrypt:/etc/letsencrypt:ro \
+                --network ubuntu_fcn-network \
+                --pull always \
+                --restart unless-stopped \
+                faithfulconnects/nginx:${{ github.event.inputs.target_server }}
             fi
-
-            echo "🔹 Removing any stopped Nginx containers..."
-            if [ "$(docker ps -aq -f name=nginx)" ]; then
-                docker rm nginx || true
-            fi
-
-            echo "🔹 Running new Nginx container..."
-            docker run -d --name nginx -p 80:80 -p 443:443 \
-              -v /etc/letsencrypt:/etc/letsencrypt:ro \
-              --network ubuntu_fcn-network \
-              --pull always \
-              --restart unless-stopped \
-              faithfulconnects/nginx
-
-            echo "🔹 Restarting Nginx..."
-            sudo systemctl restart nginx
 
             echo "✅ Nginx deployment completed on ${{ github.event.inputs.target_server }}!"

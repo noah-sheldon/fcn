@@ -1,11 +1,11 @@
 # Use official Nginx image as base
 FROM nginx:latest
 
-# Remove the default Nginx config
+# Remove default config
 RUN rm /etc/nginx/nginx.conf
 
-# Expose Nginx default ports
-EXPOSE 80 443
+# Copy all Nginx configs
+COPY nginx-configs/ /etc/nginx-configs/
 
-# Start Nginx in foreground (Docker best practice)
+# Start Nginx with the correct config
 CMD ["nginx", "-g", "daemon off;"]
