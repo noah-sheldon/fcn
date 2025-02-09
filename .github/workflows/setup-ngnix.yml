@@ -69,20 +69,22 @@ jobs:
               sudo systemctl start docker
               sudo systemctl enable docker
               sudo usermod -aG docker $USER
+              echo "🔹 Added user to Docker group. Restarting shell..."
+              newgrp docker  # Apply changes immediately
             fi
 
             echo "🔹 Ensuring Docker network exists..."
             docker network ls | grep "ubuntu_fcn-network" || docker network create ubuntu_fcn-network
 
             echo "🔹 Pulling latest Nginx image..."
-            docker pull faithfulconnects/nginx:${{ github.event.inputs.target_server }}
+            sudo docker pull faithfulconnects/nginx:${{ github.event.inputs.target_server }}
 
             echo "🔹 Stopping and removing old Nginx container (if exists)..."
-            docker stop nginx || true
-            docker rm nginx || true
+            sudo docker stop nginx || true
+            sudo docker rm nginx || true
 
             echo "🔹 Running new Nginx container..."
-            docker run -d --name nginx -p 80:80 -p 443:443 \
+            sudo docker run -d --name nginx -p 80:80 -p 443:443 \
               -e NGINX_CONFIG=${{ env.CONFIG_FILE }} \
               -v /etc/letsencrypt:/etc/letsencrypt:ro \
               --network ubuntu_fcn-network \
