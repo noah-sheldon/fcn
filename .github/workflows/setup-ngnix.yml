@@ -25,17 +25,17 @@ jobs:
         run: |
           case "${{ github.event.inputs.target_server }}" in
             DEV)
-              echo "ENV_TAG=nginx_dev" >> $GITHUB_ENV
+              echo "CONFIG_FILE=nginx.dev.conf" >> $GITHUB_ENV
               echo "SERVER_HOST=${{ secrets.SSH_DEV_HOST }}" >> $GITHUB_ENV
               echo "SERVER_USER=${{ secrets.SSH_DEV_USERNAME }}" >> $GITHUB_ENV
               ;;
             BETA)
-              echo "ENV_TAG=nginx_beta" >> $GITHUB_ENV
+              echo "CONFIG_FILE=nginx.beta.conf" >> $GITHUB_ENV
               echo "SERVER_HOST=${{ secrets.SSH_BETA_HOST }}" >> $GITHUB_ENV
               echo "SERVER_USER=${{ secrets.SSH_BETA_USERNAME }}" >> $GITHUB_ENV
               ;;
             PROD)
-              echo "ENV_TAG=nginx_prod" >> $GITHUB_ENV
+              echo "CONFIG_FILE=nginx.prod.conf" >> $GITHUB_ENV
               echo "SERVER_HOST=${{ secrets.SSH_PROD_HOST }}" >> $GITHUB_ENV
               echo "SERVER_USER=${{ secrets.SSH_PROD_USERNAME }}" >> $GITHUB_ENV
               ;;
@@ -53,9 +53,8 @@ jobs:
 
       - name: Build and Push Nginx Docker Image
         run: |
-          docker build --no-cache --build-arg ENV=${{ github.event.inputs.target_server }} \
-            -t faithfulconnects/${{ env.ENV_TAG }} ./nginx
-          docker push faithfulconnects/${{ env.ENV_TAG }}
+          docker build --no-cache -t faithfulconnects/nginx ./nginx
+          docker push faithfulconnects/nginx
 
       - name: Deploy Nginx on Server
         uses: appleboy/ssh-action@master
@@ -64,11 +63,15 @@ jobs:
           username: ${{ env.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            echo "🔹 Copying correct Nginx config..."
+            scp ./nginx-configs/${{ env.CONFIG_FILE }} ${{ env.SERVER_USER }}@${{ env.SERVER_HOST }}:/etc/nginx/nginx.conf
+
             echo "🔹 Ensuring Docker network exists..."
             docker network ls | grep "ubuntu_fcn-network" || docker network create ubuntu_fcn-network
 
             echo "🔹 Pulling latest Nginx image..."
-            docker pull faithfulconnects/${{ env.ENV_TAG }}
+            docker pull faithfulconnects/nginx
+
             echo "🔹 Checking if Nginx is already running..."
             if [ "$(docker ps -q -f name=nginx)" ]; then
                 echo "🔹 Stopping existing Nginx container..."
@@ -87,6 +90,9 @@ jobs:
               --network ubuntu_fcn-network \
               --pull always \
               --restart unless-stopped \
-              faithfulconnects/${{ env.ENV_TAG }}
+              faithfulconnects/nginx
+
+            echo "🔹 Restarting Nginx..."
+            sudo systemctl restart nginx
 
             echo "✅ Nginx deployment completed on ${{ github.event.inputs.target_server }}!"
