@@ -28,11 +28,7 @@ jobs:
 
       # ✅ Step 2: Install pnpm (Needed for package management)
       - name: Install pnpm
-        run: npm install -g pnpm
-
-      # ✅ Step 3: Install semver
-      - name: Install semver
-        run: pnpm add -g semver # ✅ Uses pnpm instead of npm
+        run: npm install -g semver
 
       # ✅ Step 4: Get Latest Git Tag
       - name: Get Latest Git Tag
