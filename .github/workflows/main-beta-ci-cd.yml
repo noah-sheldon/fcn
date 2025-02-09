@@ -1,9 +1,12 @@
 name: Deploy to Beta Server
 
 on:
-  push:
-    branches:
-      - main
+  pull_request:
+    types: [opened, synchronize]
+# on:
+#   push:
+#     branches:
+#       - main
 
 permissions:
   contents: write
