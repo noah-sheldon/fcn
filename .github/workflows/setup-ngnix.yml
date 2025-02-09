@@ -55,7 +55,7 @@ jobs:
         run: |
           docker build --no-cache -t faithfulconnects/nginx:${{ github.event.inputs.target_server }} ./nginx
           docker push faithfulconnects/nginx:${{ github.event.inputs.target_server }}
-          
+
       - name: Deploy Nginx on Server (Rolling Update)
         uses: appleboy/ssh-action@master
         with:
@@ -74,19 +74,34 @@ jobs:
             fi
 
             echo "🔹 Ensuring Docker network exists..."
-            docker network ls | grep "ubuntu_fcn-network" || docker network create ubuntu_fcn-network
+            docker network inspect ubuntu_fcn-network >/dev/null 2>&1 || docker network create ubuntu_fcn-network
+
+            echo "🔹 Checking and Freeing Port 80 if in Use..."
+            if sudo lsof -i :80 | grep LISTEN; then
+                echo "⚠️ Port 80 is in use. Stopping process..."
+                sudo fuser -k 80/tcp || true
+            fi
 
             echo "🔹 Pulling latest Nginx image..."
             docker pull faithfulconnects/nginx:${{ github.event.inputs.target_server }}
 
             echo "🔹 Checking if Nginx container already exists..."
-            if [ "$(docker ps -aq -f name=nginx)" ]; then
-                if [ "$(docker ps -q -f name=nginx)" ]; then
+            NGINX_CONTAINER_ID=$(docker ps -aq -f name=nginx)
+
+            if [ -n "$NGINX_CONTAINER_ID" ]; then
+                if [ -n "$(docker ps -q -f name=nginx)" ]; then
                     echo "🔹 Nginx is running. Performing a rolling update..."
                     docker-compose up -d --no-deps --force-recreate nginx
                 else
-                    echo "🔹 Nginx container exists but is stopped. Restarting..."
-                    docker start nginx
+                    echo "🔹 Nginx container exists but is stopped. Removing and restarting..."
+                    docker stop nginx || true
+                    docker rm nginx || true
+                    docker run -d --name nginx -p 80:80 -p 443:443 \
+                      -e NGINX_CONFIG=${{ env.CONFIG_FILE }} \
+                      -v /etc/letsencrypt:/etc/letsencrypt:ro \
+                      --network ubuntu_fcn-network \
+                      --restart unless-stopped \
+                      faithfulconnects/nginx:${{ github.event.inputs.target_server }}
                 fi
             else
                 echo "🔹 No Nginx container found. Starting a new one..."
