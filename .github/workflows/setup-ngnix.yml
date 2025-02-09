@@ -83,7 +83,9 @@ jobs:
 
             echo "🔹 Running new Nginx container..."
             docker run -d --name nginx -p 80:80 -p 443:443 \
+              -v /etc/letsencrypt:/etc/letsencrypt:ro \
               --network ubuntu_fcn-network \
+              --pull always \
               --restart unless-stopped \
               faithfulconnects/${{ env.ENV_TAG }}
 
