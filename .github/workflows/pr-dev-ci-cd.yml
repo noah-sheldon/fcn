@@ -125,7 +125,6 @@ jobs:
 
             echo "🔹 Writing updated docker-compose.yml..."
             cat > docker-compose.yml <<EOL
-            version: "3.8"
             services:
               ws-server:
                 image: faithfulconnects/ws-server:${{ env.IMAGE_TAG }}
