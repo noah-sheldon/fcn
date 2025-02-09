@@ -50,7 +50,7 @@ jobs:
           if echo "$COMMIT_MSG" | grep -q "#minor"; then VERSION_TYPE="minor"; fi
 
           # Use semver to generate new version
-          NEW_VERSION=$(pnpm exec semver -i $VERSION_TYPE ${LATEST_TAG#prod-})
+          NEW_VERSION=$(npm exec semver -i $VERSION_TYPE ${LATEST_TAG#prod-})
           FULL_VERSION="prod-${NEW_VERSION}"
 
           echo "VERSION=$FULL_VERSION" >> $GITHUB_ENV
