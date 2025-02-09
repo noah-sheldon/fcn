@@ -1,12 +1,12 @@
-name: Renew SSL Certificates
+name: Manage SSL Certificates
 
 on:
   schedule:
     - cron: "0 0 1 * *" # Runs on the 1st of every month at midnight UTC
-  workflow_dispatch: # Allows manual execution with environment selection
+  workflow_dispatch: # Allows manual execution
     inputs:
       target_server:
-        description: "Select the server for SSL renewal"
+        description: "Select the server for SSL management"
         required: true
         default: "DEV"
         type: choice
@@ -16,7 +16,7 @@ on:
           - PROD
 
 jobs:
-  renew-ssl:
+  ssl-management:
     runs-on: ubuntu-latest
 
     steps:
@@ -27,22 +27,25 @@ jobs:
             DEV)
               echo "SERVER_HOST=${{ secrets.SSH_DEV_HOST }}" >> $GITHUB_ENV
               echo "SERVER_USER=${{ secrets.SSH_DEV_USERNAME }}" >> $GITHUB_ENV
+              echo "DOMAIN=dev.fcn.social" >> $GITHUB_ENV
               ;;
             BETA)
               echo "SERVER_HOST=${{ secrets.SSH_BETA_HOST }}" >> $GITHUB_ENV
               echo "SERVER_USER=${{ secrets.SSH_BETA_USERNAME }}" >> $GITHUB_ENV
+              echo "DOMAIN=beta.fcn.social" >> $GITHUB_ENV
               ;;
             PROD)
               echo "SERVER_HOST=${{ secrets.SSH_PROD_HOST }}" >> $GITHUB_ENV
               echo "SERVER_USER=${{ secrets.SSH_PROD_USERNAME }}" >> $GITHUB_ENV
+              echo "DOMAIN=fcn.social" >> $GITHUB_ENV
               ;;
             *)
-              echo "Invalid server selection!"
+              echo "❌ Invalid server selection!"
               exit 1
               ;;
           esac
 
-      - name: Renew SSL Certificates on ${{ github.event.inputs.target_server || 'DEV' }}
+      - name: Install and Configure Certbot on ${{ github.event.inputs.target_server || 'DEV' }}
         uses: appleboy/ssh-action@master
         with:
           host: ${{ env.SERVER_HOST }}
@@ -52,7 +55,33 @@ jobs:
             echo "🔹 Updating system and installing Certbot..."
             sudo apt update && sudo apt install -y certbot python3-certbot-nginx
 
+            echo "🔹 Checking if SSL certificates exist..."
+            if [ ! -f "/etc/letsencrypt/live/${{ env.DOMAIN }}/fullchain.pem" ]; then
+              echo "🔹 SSL certificates not found. Issuing new certificates..."
+              sudo certbot certonly --nginx -d ${{ env.DOMAIN }} -d api.${{ env.DOMAIN }} -d ws.${{ env.DOMAIN }} --non-interactive --agree-tos -m admin@${{ env.DOMAIN }}
+            else
+              echo "✅ SSL certificates already exist."
+            fi
+
+      - name: Renew SSL Certificates on ${{ github.event.inputs.target_server || 'DEV' }}
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.SERVER_HOST }}
+          username: ${{ env.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
             echo "🔹 Renewing SSL Certificates..."
-            sudo certbot renew --quiet --renew-hook "systemctl restart nginx"
+            sudo certbot renew --quiet --renew-hook "sudo systemctl restart nginx"
 
             echo "✅ SSL renewal completed for ${{ github.event.inputs.target_server || 'DEV' }}"
+
+      - name: Restart Nginx
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.SERVER_HOST }}
+          username: ${{ env.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo "🔹 Restarting Nginx..."
+            sudo systemctl restart nginx
+            echo "✅ Nginx restarted successfully."
