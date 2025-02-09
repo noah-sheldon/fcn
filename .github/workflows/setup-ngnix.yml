@@ -69,11 +69,14 @@ jobs:
             echo "🔹 Pulling latest Nginx image..."
             docker pull faithfulconnects/nginx:${{ github.event.inputs.target_server }}
 
-            echo "🔹 Checking if Nginx is already running..."
+            echo "🔹 Checking if an Nginx container already exists..."
             if [ "$(docker ps -q -f name=nginx)" ]; then
-              echo "🔹 Reloading Nginx configuration..."
-              docker exec nginx nginx -t && docker exec nginx nginx -s reload
+              echo "✅ Nginx container found. Restarting..."
+              docker restart nginx
             else
+              echo "🔹 Removing old stopped Nginx container (if exists)..."
+              docker rm nginx || true
+              
               echo "🔹 Running new Nginx container..."
               docker run -d --name nginx -p 80:80 -p 443:443 \
                 -v /etc/nginx-configs/${{ env.CONFIG_FILE }}:/etc/nginx/nginx.conf:ro \
