@@ -53,7 +53,7 @@ jobs:
 
       - name: Build and Push Nginx Docker Image
         run: |
-          docker build --build-arg --no-cache ENV=${{ github.event.inputs.target_server }} \
+          docker build --no-cache --build-arg ENV=${{ github.event.inputs.target_server }} \
             -t faithfulconnects/${{ env.ENV_TAG }} ./nginx
           docker push faithfulconnects/${{ env.ENV_TAG }}
 
