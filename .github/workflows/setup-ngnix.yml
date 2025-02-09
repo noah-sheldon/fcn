@@ -56,7 +56,7 @@ jobs:
           docker build --no-cache -t faithfulconnects/nginx:${{ github.event.inputs.target_server }} ./nginx
           docker push faithfulconnects/nginx:${{ github.event.inputs.target_server }}
 
-      - name: Deploy Nginx on Server (Replace & Restart)
+      - name: Deploy Nginx on Server (Rolling Update)
         uses: appleboy/ssh-action@master
         with:
           host: ${{ env.SERVER_HOST }}
@@ -77,18 +77,20 @@ jobs:
             docker network ls | grep "ubuntu_fcn-network" || docker network create ubuntu_fcn-network
 
             echo "🔹 Pulling latest Nginx image..."
-            sudo docker pull faithfulconnects/nginx:${{ github.event.inputs.target_server }}
+            docker pull faithfulconnects/nginx:${{ github.event.inputs.target_server }}
 
-            echo "🔹 Stopping and removing old Nginx container (if exists)..."
-            sudo docker stop nginx || true
-            sudo docker rm nginx || true
+            echo "🔹 Checking if Nginx container is already running..."
+            if [ "$(docker ps -q -f name=nginx)" ]; then
+                echo "🔹 Nginx is running. Performing a rolling update..."
+                docker-compose up -d --no-deps --force-recreate nginx
+            else
+                echo "🔹 No Nginx container found. Starting a new one..."
+                docker run -d --name nginx -p 80:80 -p 443:443 \
+                  -e NGINX_CONFIG=${{ env.CONFIG_FILE }} \
+                  -v /etc/letsencrypt:/etc/letsencrypt:ro \
+                  --network ubuntu_fcn-network \
+                  --restart unless-stopped \
+                  faithfulconnects/nginx:${{ github.event.inputs.target_server }}
+            fi
 
-            echo "🔹 Running new Nginx container..."
-            sudo docker run -d --name nginx -p 80:80 -p 443:443 \
-              -e NGINX_CONFIG=${{ env.CONFIG_FILE }} \
-              -v /etc/letsencrypt:/etc/letsencrypt:ro \
-              --network ubuntu_fcn-network \
-              --restart unless-stopped \
-              faithfulconnects/nginx:${{ github.event.inputs.target_server }}
-
-            echo "✅ Nginx deployed successfully on ${{ github.event.inputs.target_server }}!"
+            echo "✅ Nginx deployment completed on ${{ github.event.inputs.target_server }}!"
