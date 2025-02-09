@@ -2,6 +2,12 @@ services:
   ws-server:
     build:
       context: ./apps/ws-server
+    container_name: ws-server
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
       - "3001:3001"
     networks:
@@ -10,6 +16,12 @@ services:
   http-server:
     build:
       context: ./apps/http-server
+    container_name: http-server
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
       - "3002:3002"
     networks:
@@ -18,13 +30,16 @@ services:
   web:
     build:
       context: ./apps/web
+    container_name: web
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
       - "3000:3000"
     networks:
       - fcn-network
-    depends_on:
-      - ws-server
-      - http-server
 
 networks:
   fcn-network:

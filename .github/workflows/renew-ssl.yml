@@ -1,0 +1,99 @@
+name: Manage SSL Certificates
+
+on:
+  schedule:
+    - cron: "0 0 1 * *" # Runs on the 1st of every month at midnight UTC
+  workflow_dispatch: # Allows manual execution
+    inputs:
+      target_server:
+        description: "Select the server for SSL management"
+        required: true
+        default: "DEV"
+        type: choice
+        options:
+          - DEV
+          - BETA
+          - PROD
+
+jobs:
+  ssl-management:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set Server Variables Based on Selection
+        id: set_server
+        run: |
+          case "${{ github.event.inputs.target_server || 'DEV' }}" in
+            DEV)
+              echo "SERVER_HOST=${{ secrets.SSH_DEV_HOST }}" >> $GITHUB_ENV
+              echo "SERVER_USER=${{ secrets.SSH_DEV_USERNAME }}" >> $GITHUB_ENV
+              echo "DOMAIN=dev.fcn.social" >> $GITHUB_ENV
+              ;;
+            BETA)
+              echo "SERVER_HOST=${{ secrets.SSH_BETA_HOST }}" >> $GITHUB_ENV
+              echo "SERVER_USER=${{ secrets.SSH_BETA_USERNAME }}" >> $GITHUB_ENV
+              echo "DOMAIN=beta.fcn.social" >> $GITHUB_ENV
+              ;;
+            PROD)
+              echo "SERVER_HOST=${{ secrets.SSH_PROD_HOST }}" >> $GITHUB_ENV
+              echo "SERVER_USER=${{ secrets.SSH_PROD_USERNAME }}" >> $GITHUB_ENV
+              echo "DOMAIN=fcn.social" >> $GITHUB_ENV
+              ;;
+            *)
+              echo "❌ Invalid server selection!"
+              exit 1
+              ;;
+          esac
+
+      - name: Install and Configure Certbot (if not installed)
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.SERVER_HOST }}
+          username: ${{ env.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo "🔹 Checking if Certbot is installed..."
+            if ! command -v certbot &> /dev/null; then
+              echo "🔹 Installing Certbot..."
+              sudo apt update && sudo apt install -y certbot python3-certbot-nginx
+            else
+              echo "✅ Certbot is already installed."
+            fi
+
+      - name: Issue or Check SSL Certificates
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.SERVER_HOST }}
+          username: ${{ env.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo "🔹 Checking for existing SSL certificates..."
+            if [ ! -f "/etc/letsencrypt/live/${{ env.DOMAIN }}/fullchain.pem" ]; then
+              echo "🔹 SSL certificates not found. Issuing new certificates..."
+              sudo certbot certonly --nginx -d ${{ env.DOMAIN }} -d api.${{ env.DOMAIN }} -d ws.${{ env.DOMAIN }} --non-interactive --agree-tos -m admin@${{ env.DOMAIN }}
+            else
+              echo "✅ SSL certificates already exist for ${{ env.DOMAIN }}."
+            fi
+
+      - name: Renew SSL Certificates
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.SERVER_HOST }}
+          username: ${{ env.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo "🔹 Renewing SSL certificates..."
+            sudo certbot renew --quiet
+
+            echo "✅ SSL renewal completed for ${{ env.DOMAIN }}."
+
+      - name: Restart Nginx After SSL Update
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.SERVER_HOST }}
+          username: ${{ env.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo "🔹 Restarting Nginx to apply SSL changes..."
+            sudo systemctl restart nginx
+            echo "✅ Nginx restarted successfully."
