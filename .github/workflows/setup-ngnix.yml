@@ -55,7 +55,7 @@ jobs:
         run: |
           docker build --no-cache -t faithfulconnects/nginx:${{ github.event.inputs.target_server }} ./nginx
           docker push faithfulconnects/nginx:${{ github.event.inputs.target_server }}
-
+          
       - name: Deploy Nginx on Server (Rolling Update)
         uses: appleboy/ssh-action@master
         with:
@@ -79,10 +79,15 @@ jobs:
             echo "🔹 Pulling latest Nginx image..."
             docker pull faithfulconnects/nginx:${{ github.event.inputs.target_server }}
 
-            echo "🔹 Checking if Nginx container is already running..."
-            if [ "$(docker ps -q -f name=nginx)" ]; then
-                echo "🔹 Nginx is running. Performing a rolling update..."
-                docker-compose up -d --no-deps --force-recreate nginx
+            echo "🔹 Checking if Nginx container already exists..."
+            if [ "$(docker ps -aq -f name=nginx)" ]; then
+                if [ "$(docker ps -q -f name=nginx)" ]; then
+                    echo "🔹 Nginx is running. Performing a rolling update..."
+                    docker-compose up -d --no-deps --force-recreate nginx
+                else
+                    echo "🔹 Nginx container exists but is stopped. Restarting..."
+                    docker start nginx
+                fi
             else
                 echo "🔹 No Nginx container found. Starting a new one..."
                 docker run -d --name nginx -p 80:80 -p 443:443 \
