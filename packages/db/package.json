@@ -1,0 +1,28 @@
+{
+  "name": "@fcn/db",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "main": "index.ts",
+  "scripts": {
+    "db:generate": "prisma generate",
+    "db:push": "npx prisma db push",
+    "db:migrate:dev": "prisma migrate dev --skip-generate",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:reset": "prisma migrate reset",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.3.1",
+    "prisma": "^6.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.5"
+  }
+}

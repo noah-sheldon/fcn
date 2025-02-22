@@ -4,7 +4,7 @@ const app = express();
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  res.send("Hi there");
+  res.send("Hi there I am Noah Sheldon");
 });
 
-app.listen(3002);
+export { app };

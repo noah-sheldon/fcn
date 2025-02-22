@@ -1,7 +1,8 @@
 services:
   ws-server:
     build:
-      context: ./apps/ws-server
+      context: .
+      dockerfile: ./apps/ws-server/Dockerfile
     container_name: ws-server
     logging:
       driver: "json-file"
@@ -15,7 +16,8 @@ services:
 
   http-server:
     build:
-      context: ./apps/http-server
+      context: .
+      dockerfile: ./apps/http-server/Dockerfile
     container_name: http-server
     logging:
       driver: "json-file"
@@ -29,7 +31,8 @@ services:
 
   web:
     build:
-      context: ./apps/web
+      context: ./ # Root context of the monorepo
+      dockerfile: ./apps/web/Dockerfile
     container_name: web
     logging:
       driver: "json-file"
