@@ -30,6 +30,10 @@
       "dependsOn": ["^lint"],
       "inputs": ["$TURBO_DEFAULT$"]
     },
+    "format": {
+      "dependsOn": ["^format"],
+      "inputs": ["$TURBO_DEFAULT$"]
+    },
     "check-types": {
       "dependsOn": ["^check-types"],
       "inputs": ["$TURBO_DEFAULT$"]
