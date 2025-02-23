@@ -50,11 +50,17 @@ export default function SignIn() {
         throw new Error(response.error);
       }
       // No need to check response.ok here; NextAuth.js handles the redirect internally
-    } catch (err: any) {
-      setError(
-        `Error signing in with ${provider}: ${err.message || "Please try again."}`
-      );
-      console.error(`Sign-In Error (${provider}):`, err);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(
+          `Error signing in with ${provider}: ${err.message || "Please try again."}`
+        );
+        console.error(`Sign-In Error (${provider}):`, err);
+      } else {
+        setError(
+          `Error signing in with ${provider}: ${err || "Please try again."}`
+        );
+      }
     } finally {
       setIsSigningIn(false);
     }

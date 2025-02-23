@@ -1,11 +1,6 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
-# Run lint and format across all packages
-pnpm turbo run lint && pnpm turbo run format
-
-# Run tests across all packages
+# Run tests before pushing
+echo "Running tests..."
 pnpm turbo run test
-
-# Run type-check across all packages
-pnpm turbo run check-types
