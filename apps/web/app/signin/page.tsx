@@ -14,30 +14,49 @@ import {
 } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
 import { useRouter } from "next/navigation";
+import { Session } from "@fcn/types"; // Ensure this matches your session type
 
 export default function SignIn() {
-  const { data: session, status } = useSession();
+  const {
+    data: session,
+    status,
+  }: {
+    data: Session;
+    status: "loading" | "authenticated" | "unauthenticated";
+  } = useSession();
   const router = useRouter();
   const [error, setError] = useState("");
+  const [isSigningIn, setIsSigningIn] = useState(false);
 
   // Redirect if user is already logged in
   useEffect(() => {
-    if (status === "authenticated") {
-      router.push("/dashboard");
+    if (status === "authenticated" && session) {
+      // Check if the user is new and redirect accordingly
+      if (session.user?.isNewUser) {
+        router.push("/welcome");
+      } else {
+        router.push("/dashboard");
+      }
     }
-  }, [status, router]);
+  }, [status, session, router]);
 
   // Handle Social Sign-In
   const handleSocialSignIn = async (provider: string) => {
     setError("");
+    setIsSigningIn(true);
     try {
       const response = await signIn(provider, { callbackUrl: "/dashboard" });
-      if (!response?.ok) {
-        throw new Error("Sign-in failed");
+      if (response?.error) {
+        throw new Error(response.error);
       }
-    } catch (err) {
-      setError(`Error signing in with ${provider}. Please try again.`);
+      // No need to check response.ok here; NextAuth.js handles the redirect internally
+    } catch (err: any) {
+      setError(
+        `Error signing in with ${provider}: ${err.message || "Please try again."}`
+      );
       console.error(`Sign-In Error (${provider}):`, err);
+    } finally {
+      setIsSigningIn(false);
     }
   };
 
@@ -94,10 +113,13 @@ export default function SignIn() {
             <Button
               className="w-full mb-4 border border-gray-300 bg-white hover:bg-gray-100 text-gray-700"
               onClick={() => handleSocialSignIn("google")}
+              disabled={isSigningIn}
             >
               <div className="flex items-center justify-center space-x-2">
                 <FcGoogle className="text-xl" />
-                <span>Sign in with Google</span>
+                <span>
+                  {isSigningIn ? "Signing in..." : "Sign in with Google"}
+                </span>
               </div>
             </Button>
           </CardContent>

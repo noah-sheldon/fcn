@@ -1,10 +1,10 @@
 "use client";
-import { redirect } from "next/navigation";
-import React from "react";
 import { useSession } from "next-auth/react";
 import { Session } from "@fcn/types";
+import { redirect } from "next/navigation";
+import React from "react";
 
-function Dashboard() {
+function Welcome() {
   const {
     data: session,
     status,
@@ -12,16 +12,15 @@ function Dashboard() {
     data: Session;
     status: "loading" | "authenticated" | "unauthenticated";
   } = useSession();
-
   if (status === "loading") {
     return <div>Loading...</div>;
   } else if (!session) {
     redirect("/signin");
-  } else if (session.user.isNewUser) {
-    redirect("/welcome");
+  } else if (!session.user.isNewUser) {
+    redirect("/dashboard");
   } else {
-    return <div>Dashboard</div>;
+    return <div>Welcome</div>;
   }
 }
 
-export default Dashboard;
+export default Welcome;
