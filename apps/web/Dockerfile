@@ -37,6 +37,8 @@ RUN pnpm install --frozen-lockfile
 # Copy the full project files for the build
 COPY --from=builder /app/out/full/ .
 
+RUN pnpm turbo db:generate
+
 # Uncomment and use build args to enable remote caching if needed
 # ARG TURBO_TEAM
 # ENV TURBO_TEAM=$TURBO_TEAM
@@ -64,6 +66,7 @@ USER nextjs
 COPY --from=installer --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
 COPY --from=installer --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=installer --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
+COPY --from=installer --chown=nextjs:nodejs /app/packages/db/ ./packages/db/
 
 # Start the Next.js server
 CMD ["node", "apps/web/server.js"]
