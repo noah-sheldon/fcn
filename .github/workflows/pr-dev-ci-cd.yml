@@ -60,6 +60,8 @@ jobs:
         env:
           FCN_DATABASE_URL: ${{ secrets.DEV_FCN_DATABASE_URL }}
         run: |
+          export FCN_DATABASE_URL=${{ secrets.DEV_FCN_DATABASE_URL }}
+          echo "FCN_DATABASE_URL is set"
           echo "Applying Prisma migrations to dev database..."
           pnpm turbo db:migrate:deploy
 
