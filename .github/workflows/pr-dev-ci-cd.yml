@@ -185,6 +185,9 @@ jobs:
                 restart: unless-stopped
                 environment:
                   - FCN_DATABASE_URL=${{ secrets.DEV_FCN_DATABASE_URL }}
+                  - GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+                  - GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+                  - NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
                 depends_on:
                   - http-server
                   - ws-server
