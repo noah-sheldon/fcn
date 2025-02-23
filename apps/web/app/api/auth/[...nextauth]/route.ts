@@ -4,7 +4,7 @@ import { NextAuthOptions } from "next-auth";
 import { prisma } from "@fcn/db";
 import { User, JWT, Session } from "@fcn/types";
 
-export const authOptions: NextAuthOptions = {
+const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
