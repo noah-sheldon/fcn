@@ -81,12 +81,12 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build & Push Docker Images
+      - name: Build Docker images
         run: |
-          echo "🔹 Building Docker images..."
-          docker build -t faithfulconnects/ws-server:${{ env.IMAGE_TAG }} ./apps/ws-server
-          docker build -t faithfulconnects/http-server:${{ env.IMAGE_TAG }} ./apps/http-server
-          docker build -t faithfulconnects/web:${{ env.IMAGE_TAG }} ./apps/web
+          docker build -t faithfulconnects/ws-server:${{ env.IMAGE_TAG }} -f apps/ws-server/Dockerfile .
+          docker build -t faithfulconnects/http-server:${{ env.IMAGE_TAG }} -f apps/http-server/Dockerfile .
+          docker build -t faithfulconnects/web:${{ env.IMAGE_TAG }} -f apps/web/Dockerfile .
+
 
           echo "🔹 Pushing Docker images..."
           docker push faithfulconnects/ws-server:${{ env.IMAGE_TAG }}
