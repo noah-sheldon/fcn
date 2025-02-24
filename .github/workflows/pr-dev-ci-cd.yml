@@ -87,7 +87,8 @@ jobs:
           docker build -t faithfulconnects/http-server:${{ env.IMAGE_TAG }} -f apps/http-server/Dockerfile .
           docker build -t faithfulconnects/web:${{ env.IMAGE_TAG }} -f apps/web/Dockerfile .
 
-
+      - name: Push Docker images
+        run: |
           echo "🔹 Pushing Docker images..."
           docker push faithfulconnects/ws-server:${{ env.IMAGE_TAG }}
           docker push faithfulconnects/http-server:${{ env.IMAGE_TAG }}
