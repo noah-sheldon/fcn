@@ -37,7 +37,7 @@ jobs:
     needs: build
     env:
       IMAGE_TAG: pr-${{ github.event.pull_request.number }}
-
+      FCN_DATABASE_URL: ${{ secrets.DEV_FCN_DATABASE_URL }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -60,8 +60,6 @@ jobs:
         uses: mxschmitt/action-tmate@v3
 
       - name: Apply Prisma Migrations to Dev
-        env:
-          FCN_DATABASE_URL: ${{ secrets.DEV_FCN_DATABASE_URL }}
         run: |
           echo "Applying Prisma migrations to dev database..."
           pnpm turbo db:migrate:deploy
