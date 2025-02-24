@@ -56,8 +56,9 @@ jobs:
       - name: Generate Prisma Client
         run: pnpm turbo db:generate
 
-      - name: Debug with tmate
-        uses: mxschmitt/action-tmate@v3
+      - name: Create .env file for Prisma
+        run: |
+          echo "FCN_DATABASE_URL=${{ secrets.DEV_FCN_DATABASE_URL }}" > packages/db/.env
 
       - name: Apply Prisma Migrations to Dev
         run: |
