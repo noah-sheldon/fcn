@@ -67,4 +67,4 @@ USER expressjs
 COPY --from=installer /app .
 
 # Start the HTTP server
-CMD ["node", "apps/http-server/dist/index.js"]
+CMD ["node", "apps/http-server/dist/bin.js"]
