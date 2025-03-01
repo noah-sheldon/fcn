@@ -124,15 +124,6 @@ jobs:
               echo "✅ Docker is already installed."
             fi
 
-            # ✅ Add user to Docker group
-            sudo usermod -aG docker $USER
-
-            # ✅ Restart Docker service
-            sudo systemctl restart docker
-
-            # ✅ Set Docker socket permissions
-            sudo chmod 666 /var/run/docker.sock
-
             # ✅ Install Docker Compose if missing
             if ! command -v docker-compose &> /dev/null; then
               echo "🔹 Installing Docker Compose..."
@@ -161,59 +152,10 @@ jobs:
             # ✅ Remove unused volumes
             docker volume prune -f
 
-            echo "🔹 Pulling latest Docker images..."
-            docker pull faithfulconnects/ws-server:${{ env.IMAGE_TAG }}
-            docker pull faithfulconnects/http-server:${{ env.IMAGE_TAG }}
-            docker pull faithfulconnects/web:${{ env.IMAGE_TAG }}
-
-            echo "🔹 Writing updated docker-compose.yml..."
-            cat > docker-compose.yml <<EOL
-            services:
-              ws-server:
-                image: faithfulconnects/ws-server:${{ env.IMAGE_TAG }}
-                container_name: ws-server
-                restart: unless-stopped
-                environment:
-                  - FCN_DATABASE_URL=${{ secrets.DEV_FCN_DATABASE_URL }}
-                ports:
-                  - '3001:3001'
-                networks:
-                  - fcn-network
-
-              http-server:
-                image: faithfulconnects/http-server:${{ env.IMAGE_TAG }}
-                container_name: http-server
-                restart: unless-stopped
-                environment:
-                  - FCN_DATABASE_URL=${{ secrets.DEV_FCN_DATABASE_URL }}
-                ports:
-                  - '3002:3002'
-                networks:
-                  - fcn-network
-
-              web:
-                image: faithfulconnects/web:${{ env.IMAGE_TAG }}
-                container_name: web
-                restart: unless-stopped
-                environment:
-                  - FCN_DATABASE_URL=${{ secrets.DEV_FCN_DATABASE_URL }}
-                  - GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
-                  - GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
-                  - NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
-                depends_on:
-                  - http-server
-                  - ws-server
-                ports:
-                  - '3000:3000'
-                networks:
-                  - fcn-network
-
-            networks:
-              fcn-network:
-                driver: bridge
-            EOL
+             echo "🔹 Pulling latest Docker images..."
+            docker-compose -f docker-compose.yml pull
 
             echo "🔹 Restarting services..."
-            docker-compose up -d --no-deps --force-recreate
+            docker-compose -f docker-compose.yml up -d --no-deps --force-recreate
 
             echo "✅ Deployment successful!"

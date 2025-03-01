@@ -1,8 +1,10 @@
 services:
   ws-server:
+    image: faithfulconnects/ws-server:${IMAGE_TAG}
     build:
       context: .
-      dockerfile: ./apps/ws-server/Dockerfile
+      dockerfile: docker/Dockerfile
+      target: production
     container_name: ws-server
     logging:
       driver: "json-file"
@@ -15,9 +17,11 @@ services:
       - fcn-network
 
   http-server:
+    image: faithfulconnects/http-server:${IMAGE_TAG}
     build:
       context: .
-      dockerfile: ./apps/http-server/Dockerfile
+      dockerfile: docker/Dockerfile
+      target: production
     container_name: http-server
     logging:
       driver: "json-file"
@@ -30,9 +34,11 @@ services:
       - fcn-network
 
   web:
+    image: faithfulconnects/web:${IMAGE_TAG}
     build:
-      context: ./ # Root context of the monorepo
-      dockerfile: ./apps/web/Dockerfile
+      context: .
+      dockerfile: docker/Dockerfile
+      target: production
     container_name: web
     logging:
       driver: "json-file"

@@ -128,7 +128,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "/app/packages/db/generated/client",
+      "value": "/Users/noahsheldon/Documents/fcn/packages/db/generated/client",
       "fromEnvVar": null
     },
     "config": {
@@ -137,12 +137,12 @@ const config = {
     "binaryTargets": [
       {
         "fromEnvVar": null,
-        "value": "linux-musl-arm64-openssl-3.0.x",
+        "value": "darwin-arm64",
         "native": true
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "/app/packages/db/prisma/schema.prisma",
+    "sourceFilePath": "/Users/noahsheldon/Documents/fcn/packages/db/prisma/schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {

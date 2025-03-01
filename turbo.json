@@ -38,6 +38,10 @@
       "dependsOn": ["^check-types"],
       "inputs": ["$TURBO_DEFAULT$"]
     },
+    "start": {
+      "dependsOn": ["^start"],
+      "inputs": ["$TURBO_DEFAULT$"]
+    },
     "dev": {
       "dependsOn": ["^db:generate"],
       "cache": false,
