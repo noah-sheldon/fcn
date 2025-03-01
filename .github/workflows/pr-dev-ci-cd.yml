@@ -124,6 +124,15 @@ jobs:
               echo "✅ Docker is already installed."
             fi
 
+            # ✅ Add user to Docker group
+            sudo usermod -aG docker $USER
+
+            # ✅ Restart Docker service
+            sudo systemctl restart docker
+
+            # ✅ Set Docker socket permissions
+            sudo chmod 666 /var/run/docker.sock
+
             # ✅ Install Docker Compose if missing
             if ! command -v docker-compose &> /dev/null; then
               echo "🔹 Installing Docker Compose..."
@@ -198,7 +207,7 @@ jobs:
                   - '3000:3000'
                 networks:
                   - fcn-network
-                  
+
             networks:
               fcn-network:
                 driver: bridge
