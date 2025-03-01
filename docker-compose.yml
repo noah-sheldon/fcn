@@ -1,56 +1,16 @@
 services:
-  ws-server:
-    image: faithfulconnects/ws-server:${IMAGE_TAG}
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
-      target: production
-    container_name: ws-server
+  turbo-repo:
+    image: faithfulconnects/turbo-repo:${IMAGE_TAG}
+    container_name: turbo-repo
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
     ports:
-      - "3001:3001"
-    networks:
-      - fcn-network
-    environment:
-      - FCN_DATABASE_URL=${FCN_DATABASE_URL}
-
-  http-server:
-    image: faithfulconnects/http-server:${IMAGE_TAG}
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
-      target: production
-    container_name: http-server
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-    ports:
-      - "3002:3002"
-    networks:
-      - fcn-network
-    environment:
-      - FCN_DATABASE_URL=${FCN_DATABASE_URL}
-
-  web:
-    image: faithfulconnects/web:${IMAGE_TAG}
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
-      target: production
-    container_name: web
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-    ports:
-      - "3000:3000"
+      - "3000:3000" # Next.js app
+      - "3001:3001" # WebSocket server
+      - "3002:3002" # HTTP server
     networks:
       - fcn-network
     environment:

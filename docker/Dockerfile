@@ -26,7 +26,7 @@ RUN pnpm turbo run build
 EXPOSE 3000 3001 3002
 
 # Command to run the applications in development mode
-CMD ["pnpm", "turbo", "run", "dev"]
+CMD ["pnpm", "turbo", "dev"]
 
 # Beta Stage
 FROM base AS beta
@@ -38,13 +38,13 @@ RUN pnpm install
 COPY . .
 
 # Build the applications
-RUN pnpm turbo run build
+RUN pnpm turbo build
 
 # Expose ports for beta
 EXPOSE 3000 3001 3002
 
 # Command to run the applications in beta mode
-CMD ["pnpm", "turbo", "run", "start"]
+CMD ["pnpm", "turbo", "start"]
 
 # Production Stage
 FROM node:22-alpine AS production
@@ -59,6 +59,7 @@ RUN npm install -g pnpm
 COPY --from=beta /app/apps/web/dist ./apps/web
 COPY --from=beta /app/apps/ws-server/dist ./apps/ws-server
 COPY --from=beta /app/apps/http-server/dist ./apps/http-server
+COPY --from=beta /app/apps/db/dist ./apps/db
 
 # Copy package.json and pnpm-lock.yaml for production dependencies
 COPY pnpm-lock.yaml package.json pnpm-workspace.yaml ./

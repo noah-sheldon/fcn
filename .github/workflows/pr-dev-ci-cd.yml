@@ -83,16 +83,12 @@ jobs:
 
       - name: Build Docker images
         run: |
-          docker build -t faithfulconnects/ws-server:${{ env.IMAGE_TAG }} -f apps/ws-server/Dockerfile .
-          docker build -t faithfulconnects/http-server:${{ env.IMAGE_TAG }} -f apps/http-server/Dockerfile .
-          docker build -t faithfulconnects/web:${{ env.IMAGE_TAG }} -f apps/web/Dockerfile .
+          docker build -t faithfulconnects/turbo-repo:${{ env.IMAGE_TAG }} -f docker/Dockerfile .
 
       - name: Push Docker images
         run: |
           echo "🔹 Pushing Docker images..."
-          docker push faithfulconnects/ws-server:${{ env.IMAGE_TAG }}
-          docker push faithfulconnects/http-server:${{ env.IMAGE_TAG }}
-          docker push faithfulconnects/web:${{ env.IMAGE_TAG }}
+          docker push faithfulconnects/turbo-repo:${{ env.IMAGE_TAG }}
 
       - name: Log out of Docker Hub
         run: docker logout # 🔐 Prevents secrets exposure
