@@ -102,6 +102,10 @@ jobs:
     needs: deploy-dev
     env:
       IMAGE_TAG: pr-${{ github.event.pull_request.number }}
+      FCN_DATABASE_URL: ${{ secrets.DEV_FCN_DATABASE_URL }}
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
 
     steps:
       - name: Deploy to Development Server via SSH
@@ -110,6 +114,7 @@ jobs:
           host: ${{ secrets.SSH_DEV_HOST }}
           username: ${{ secrets.SSH_DEV_USERNAME }}
           key: ${{ secrets.SSH_DEV_PRIVATE_KEY }}
+          envs: IMAGE_TAG, FCN_DATABASE_URL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, NEXTAUTH_SECRET
           script: |
             echo "🔹 Checking & Installing Dependencies..."
 
