@@ -1,11 +1,11 @@
 {
   "name": "http-server",
   "version": "1.0.0",
-  "main": "index.js",
+  "private": true,
   "scripts": {
+    "dev": "NODE_ENV=development nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/bin.ts",
     "build": "tsc -b",
-    "start": "node ./dist/index.js",
-    "dev": "pnpm run build && pnpm run start",
+    "start": "NODE_ENV=production node dist/bin.js",
     "test": "echo 'No tests available' && exit 0"
   },
   "keywords": [],
@@ -16,7 +16,10 @@
     "express": "^4.21.2"
   },
   "devDependencies": {
-    "@types/express": "^5.0.0",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.0.0",
+    "nodemon": "^3.1.9",
+    "ts-node": "^10.9.2",
     "typescript": "^5.7.3"
   }
 }

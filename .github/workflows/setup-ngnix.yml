@@ -91,7 +91,7 @@ jobs:
             if [ -n "$NGINX_CONTAINER_ID" ]; then
                 if [ -n "$(docker ps -q -f name=nginx)" ]; then
                     echo "🔹 Nginx is running. Performing a rolling update..."
-                    docker-compose up -d --no-deps --force-recreate nginx
+                    docker restart nginx
                 else
                     echo "🔹 Nginx container exists but is stopped. Removing and restarting..."
                     docker stop nginx || true

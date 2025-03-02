@@ -1,0 +1,35 @@
+services:
+  turbo:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dev
+    env_file:
+      - .env
+      - apps/web/.env
+    environment:
+      - NODE_ENV=development
+      - WATCHPACK_POLLING=true
+      - NEXT_WEBPACK_USEPOLLING=1
+      - CHOKIDAR_USEPOLLING=true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+      - "3002:3002"
+    networks:
+      - fcn-network
+    volumes:
+      - ./:/app/
+      # - /app/node_modules
+      # - /app/apps/http-server/node_modules
+      # - /app/apps/ws-server/node_modules
+      # - /app/apps/web/node_modules
+    restart: on-failure
+
+networks:
+  fcn-network:
+    driver: bridge

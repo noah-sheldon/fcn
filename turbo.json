@@ -3,10 +3,23 @@
   "ui": "tui",
   "globalDependencies": [".env*"],
   "tasks": {
+    "db:generate": {
+      "cache": false
+    },
+    "db:deploy": {
+      "cache": false
+    },
+    "db:migrate:dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "db:migrate:deploy": {
+      "cache": false
+    },
     "build": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "^db:generate"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".next/**", "dist/**", "!.next/cache/**"]
+      "outputs": [".next/**", "dist/**"]
     },
     "test": {
       "dependsOn": ["^test"],
@@ -17,11 +30,20 @@
       "dependsOn": ["^lint"],
       "inputs": ["$TURBO_DEFAULT$"]
     },
+    "format": {
+      "dependsOn": ["^format"],
+      "inputs": ["$TURBO_DEFAULT$"]
+    },
     "check-types": {
       "dependsOn": ["^check-types"],
       "inputs": ["$TURBO_DEFAULT$"]
     },
+    "start": {
+      "dependsOn": ["^start"],
+      "inputs": ["$TURBO_DEFAULT$"]
+    },
     "dev": {
+      "dependsOn": ["^db:generate"],
       "cache": false,
       "persistent": true
     }

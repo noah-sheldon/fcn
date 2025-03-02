@@ -1,37 +1,70 @@
-# ---- Base Build Stage ----
-FROM node:22 AS build
+# ---- Base Stage ----
+FROM node:22-alpine AS node
 
-WORKDIR /app
-
-# Copy package.json and lock file for dependency installation (No source code yet)
-COPY package.json ./
-
-# Install pnpm and install dependencies (including dev dependencies for build)
-RUN npm install -g pnpm && pnpm install
-
-# Copy only the source code (Avoids unnecessary files)
-COPY . .
-
-# Build the project (Compile TypeScript to JavaScript)
-RUN pnpm run build
-
-# ---- Production Stage (No Source Code) ----
-FROM node:22 AS production
-
-WORKDIR /app
-
+# ---- Builder Stage ----
+FROM node AS base
 # Install pnpm globally
 RUN npm install -g pnpm
 
-# Copy only the built output (No raw TypeScript)
-COPY --from=build /app/dist ./dist
-COPY --from=build /app/package.json ./
+# Install necessary packages
+RUN apk update && apk add --no-cache libc6-compat
 
-# Install only production dependencies (removes unnecessary dev packages)
-RUN pnpm install --prod
+# ---- Builder Stage ----
+FROM base AS builder
 
-# Expose the HTTP API port
-EXPOSE 3002
+# Set the working directory
+WORKDIR /app
+
+RUN pnpm add turbo
+
+# Copy the entire project to the container
+COPY . .
+
+# Prune the project for Docker
+RUN pnpm turbo prune http-server --docker
+
+# ---- Installer Stage ----
+FROM base AS installer
+
+# Set the working directory
+WORKDIR /app
+
+# Install necessary packages
+RUN apk update && apk add --no-cache libc6-compat
+
+# Copy pruned lockfile and package.json files
+COPY --from=builder /app/out/json/ .
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy the full project files for the build
+COPY --from=builder /app/out/full/ .
+
+# Uncomment and use build args to enable remote caching if needed
+# ARG TURBO_TEAM
+# ENV TURBO_TEAM=$TURBO_TEAM
+# ARG TURBO_TOKEN
+# ENV TURBO_TOKEN=$TURBO_TOKEN
+
+# Build the project
+RUN pnpm turbo build
+
+# ---- Runner Stage ----
+FROM base AS runner
+
+# Set the working directory
+WORKDIR /app
+
+# Create a non-root user and switch to it
+RUN addgroup --system --gid 1001 expressjs && \
+    adduser --system --uid 1001 expressjs
+
+# Use the non-root user
+USER expressjs
+
+# Copy only the compiled code and necessary files
+COPY --from=installer /app .
 
 # Start the HTTP server
-CMD ["node", "dist/index.js"]
+CMD ["node", "apps/http-server/dist/bin.js"]

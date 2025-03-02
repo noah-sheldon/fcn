@@ -1,0 +1,13 @@
+{
+  "extends": "@fcn/typescript-config/base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "declaration": true,
+    "declarationMap": true,
+    "paths": {
+      "@fcn/types": ["."]
+    }
+  },
+  "include": ["."],
+  "exclude": ["dist", "build", "node_modules"]
+}

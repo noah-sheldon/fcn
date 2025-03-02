@@ -1,43 +1,72 @@
-# ---- Base Build Stage ----
-FROM node:22 AS build
+# ---- Base Stage ----
+FROM node:22-alpine AS node
 
-# Install pnpm globally
+FROM node AS base
 RUN npm install -g pnpm
+
+# Install necessary packages
+RUN apk update && apk add --no-cache libc6-compat
+
+# ---- Builder Stage ----
+FROM base AS builder
 
 # Set the working directory
 WORKDIR /app
 
-# Copy package.json and lock file first (for efficient caching)
-COPY package.json ./
+# Install pnpm globally
+RUN pnpm add turbo
 
-# Install dependencies (including dev dependencies for build)
-RUN pnpm install
-
-# Copy the full Next.js project source code
+# Copy the entire project to the container
 COPY . .
 
-# Build the Next.js application
-RUN pnpm run build
+# Prune the project for Docker
+RUN pnpm turbo prune web --docker
 
-# ---- Production Stage (No Source Code) ----
-FROM node:22 AS production
+# ---- Installer Stage ----
+FROM base AS installer
 
 # Set the working directory
 WORKDIR /app
 
-# Install pnpm globally
-RUN npm install -g pnpm
+# Copy pruned lockfile and package.json files
+COPY --from=builder /app/out/json/ .
 
-# Copy only the built output (No raw Next.js source code)
-COPY --from=build /app/.next ./.next
-COPY --from=build /app/public ./public
-COPY --from=build /app/package.json ./
+# Install dependencies
+RUN pnpm install --frozen-lockfile
 
-# Install only production dependencies
-RUN pnpm install --prod
+# Copy the full project files for the build
+COPY --from=builder /app/out/full/ .
 
-# Expose the web application port
-EXPOSE 3000
+RUN pnpm turbo db:generate
+
+# Uncomment and use build args to enable remote caching if needed
+# ARG TURBO_TEAM
+# ENV TURBO_TEAM=$TURBO_TEAM
+# ARG TURBO_TOKEN
+# ENV TURBO_TOKEN=$TURBO_TOKEN
+
+# Build the project
+RUN pnpm turbo build --filter=web...
+
+# ---- Runner Stage ----
+FROM base AS runner
+
+# Set the working directory
+WORKDIR /app
+
+# Create a non-root user and switch to it
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+# Use the non-root user
+USER nextjs
+
+# Automatically leverage output traces to reduce image size
+# https://nextjs.org/docs/advanced-features/output-file-tracing
+COPY --from=installer --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
+COPY --from=installer --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=installer --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
+COPY --from=installer --chown=nextjs:nodejs /app/packages/db/ ./packages/db/
 
 # Start the Next.js server
-CMD ["pnpm", "start"]
+CMD ["node", "apps/web/server.js"]

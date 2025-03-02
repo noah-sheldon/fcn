@@ -70,7 +70,7 @@ jobs:
             echo "🔹 Checking for existing SSL certificates..."
             if [ ! -f "/etc/letsencrypt/live/${{ env.DOMAIN }}/fullchain.pem" ]; then
               echo "🔹 SSL certificates not found. Issuing new certificates..."
-              sudo certbot certonly --nginx -d ${{ env.DOMAIN }} -d api.${{ env.DOMAIN }} -d ws.${{ env.DOMAIN }} --non-interactive --agree-tos -m admin@${{ env.DOMAIN }}
+              sudo certbot certonly --nginx -d ${{ env.DOMAIN }} --non-interactive --agree-tos -m admin@${{ env.DOMAIN }}
             else
               echo "✅ SSL certificates already exist for ${{ env.DOMAIN }}."
             fi

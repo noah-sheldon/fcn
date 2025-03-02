@@ -1,0 +1,6 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Run lint and format checks
+echo "Running lint and format checks..."
+pnpm turbo run lint && pnpm turbo run format
