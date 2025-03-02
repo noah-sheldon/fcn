@@ -104,18 +104,6 @@ jobs:
       NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.5.3
-        with:
-          ssh-private-key: ${{ secrets.SSH_DEV_PRIVATE_KEY }}
-
-      - name: Copy docker-compose.yml to Remote Server
-        run: |
-          scp docker-compose.yml ${{ secrets.SSH_DEV_USERNAME }}@${{ secrets.SSH_DEV_HOST }}:docker-compose.yml
-
       - name: Deploy to Development Server via SSH
         uses: appleboy/ssh-action@master
         with:
@@ -168,7 +156,36 @@ jobs:
              echo "🔹 Pulling latest Docker images..."
             docker-compose -f docker-compose.yml pull
 
+            echo "🔹 Writing updated docker-compose.yml..."
+            cat > docker-compose.yml <<EOL
+            services:
+              turbo-repo:
+                image: faithfulconnects/turbo-repo:${IMAGE_TAG}
+                container_name: turbo-repo
+                logging:
+                  driver: "json-file"
+                  options:
+                    max-size: "10m"
+                    max-file: "3"
+                ports:
+                  - "3000:3000" # Next.js app
+                  - "3001:3001" # WebSocket server
+                  - "3002:3002" # HTTP server
+                networks:
+                  - fcn-network
+                environment:
+                  - FCN_DATABASE_URL=${FCN_DATABASE_URL}
+                  - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+                  - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+                  - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+
+            networks:
+              fcn-network:
+                driver: bridge
+
+            EOL
+
             echo "🔹 Restarting services..."
-            docker-compose -f docker-compose.yml up -d --no-deps --force-recreate
+            docker-compose up -d --no-deps --force-recreate
 
             echo "✅ Deployment successful!"
