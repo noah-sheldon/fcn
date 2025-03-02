@@ -7,17 +7,14 @@ WORKDIR /app
 # Install pnpm
 RUN npm install -g pnpm
 
-# Copy package.json, pnpm-lock.yaml, and pnpm-workspace.yaml
-COPY pnpm-lock.yaml package.json pnpm-workspace.yaml ./
+# Copy the entire repository to ensure all package.json files are included
+COPY . .
 
 # Development Stage
 FROM base AS development
 
 # Install all dependencies
 RUN pnpm install
-
-# Copy the rest of the application code
-COPY . .
 
 # Build the applications
 RUN pnpm turbo build
@@ -33,9 +30,6 @@ FROM base AS beta
 
 # Install all dependencies
 RUN pnpm install
-
-# Copy the rest of the application code
-COPY . .
 
 # Build the applications
 RUN pnpm turbo build
