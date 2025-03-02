@@ -178,6 +178,7 @@ jobs:
                   - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
                   - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
                   - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+                  - NEXTAUTH_URL=https://dev.fcn.social
 
             networks:
               fcn-network:
