@@ -7,7 +7,7 @@ WORKDIR /app
 # Install pnpm
 RUN npm install -g pnpm
 
-# Copy package.json and pnpm-lock.yaml
+# Copy package.json, pnpm-lock.yaml, and pnpm-workspace.yaml
 COPY pnpm-lock.yaml package.json pnpm-workspace.yaml ./
 
 # Development Stage
@@ -20,7 +20,7 @@ RUN pnpm install
 COPY . .
 
 # Build the applications
-RUN pnpm turbo run build
+RUN pnpm turbo build
 
 # Expose ports for development
 EXPOSE 3000 3001 3002
@@ -55,14 +55,8 @@ WORKDIR /app
 # Install pnpm
 RUN npm install -g pnpm
 
-# Copy only the necessary build artifacts from the beta stage
-COPY --from=beta /app/apps/web/dist ./apps/web
-COPY --from=beta /app/apps/ws-server/dist ./apps/ws-server
-COPY --from=beta /app/apps/http-server/dist ./apps/http-server
-COPY --from=beta /app/apps/db/dist ./apps/db
-
-# Copy package.json and pnpm-lock.yaml for production dependencies
-COPY pnpm-lock.yaml package.json pnpm-workspace.yaml ./
+# Copy the entire repository from the beta stage
+COPY --from=beta /app /app
 
 # Install only production dependencies
 RUN pnpm install --production
