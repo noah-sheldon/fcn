@@ -186,6 +186,6 @@ jobs:
             EOL
 
             echo "🔹 Restarting services..."
-            docker-compose up -d --no-deps --force-recreate
+            docker compose up -d --no-deps --force-recreate
 
             echo "✅ Deployment successful!"

@@ -14,7 +14,7 @@ COPY . .
 FROM base AS development
 
 # Install all dependencies
-RUN pnpm install
+RUN pnpm install --frozen-lockfile
 
 # Build the applications
 RUN pnpm turbo build
@@ -29,7 +29,7 @@ CMD ["pnpm", "turbo", "dev"]
 FROM base AS beta
 
 # Install all dependencies
-RUN pnpm install
+RUN pnpm install --frozen-lockfile
 
 # Build the applications
 RUN pnpm turbo build
@@ -53,7 +53,7 @@ RUN npm install -g pnpm
 COPY --from=beta /app /app
 
 # Install only production dependencies
-RUN pnpm install --production
+RUN pnpm install --production --frozen-lockfile
 
 # Expose ports for production
 EXPOSE 3000 3001 3002
